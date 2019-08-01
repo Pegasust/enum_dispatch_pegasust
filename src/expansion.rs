@@ -48,6 +48,12 @@ pub fn add_enum_impls(enum_def: EnumDispatchItem, traitdef: syn::ItemTrait) -> p
     for from_impl in from_impls.iter() {
         from_impl.to_tokens(&mut impls);
     }
+
+    let try_from_impls = generate_try_from_impls(&enum_def.ident, &variants, &trait_impl.generics);
+    for try_from_impl in try_from_impls.iter() {
+        try_from_impl.to_tokens(&mut impls);
+    }
+
     trait_impl.to_tokens(&mut impls);
     impls
 }
@@ -64,6 +70,46 @@ fn generate_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVaria
                 impl #impl_generics ::std::convert::From<#variant_type> for #enumname #ty_generics #where_clause {
                     fn from(v: #variant_type) -> #enumname #ty_generics {
                         #enumname::#variant_name(v)
+                    }
+                }
+            };
+            syn::parse(impl_block.into()).unwrap()
+        }).collect()
+}
+
+/// Generates impls of std::convert::TryFrom for each enum variant.
+fn generate_try_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVariant], generics: &syn::Generics) -> Vec<syn::ItemImpl> {
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    enumvariants
+        .iter()
+        .enumerate()
+        .map(|(i, variant)| {
+            let variant_name = &variant.ident;
+            let variant_type = &variant.ty;
+
+            // Instead of making a specific match arm for each of the other variants we could just
+            // use a catch-all wildcard, but doing it this way means we get nicer error messages
+            // that say what the wrong variant is. It also degrades nicely in the case of a single
+            // variant enum so we don't get an unsightly "unreachable pattern" warning.
+            let other = enumvariants
+                .iter()
+                .enumerate()
+                .filter_map(
+                    |(j, other)| if i != j { Some(&other.ident) } else { None });
+            let from_str = other.clone().map(|ident| ident.to_string());
+            let to_str = std::iter::repeat(variant_name.to_string());
+            let repeated = std::iter::repeat(&enumname);
+
+            let impl_block = quote! {
+                impl #impl_generics std::convert::TryFrom<#enumname #ty_generics > for #variant_type #where_clause {
+                    type Error = &'static str;
+                    fn try_from(e: #enumname #ty_generics ) -> Result<Self, Self::Error> {
+                        match e {
+                            #enumname::#variant_name(v) => {Ok(v)},
+                            #(  #repeated::#other(v) => {
+                                Err(concat!("Tried to convert variant ",
+                                            #from_str, " to ", #to_str))}    ),*
+                        }
                     }
                 }
             };
