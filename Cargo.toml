@@ -14,7 +14,7 @@ license = "MIT OR Apache-2.0"
 proc-macro = true
 
 [dependencies]
-lazy_static = ">= 1.1.0, <= 1.4"
+once_cell = ">= 1.0.1, <= 1.2"
 quote = ">= 0.6.8, <= 0.6.13"
 proc-macro2 = "^0.4.13"
 syn = { version = ">= 0.15.9, <= 0.15.44", features = ["full", "extra-traits"] }

@@ -11,7 +11,7 @@ use proc_macro::Ident;
 use quote::ToTokens;
 use syn;
 
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -20,11 +20,9 @@ use crate::enum_dispatch_item;
 
 // Magical storage for trait definitions so that they can be used when parsing other syntax
 // structures.
-lazy_static! {
-    static ref TRAIT_DEFS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-    static ref ENUM_DEFS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-    static ref DEFERRED_LINKS: Mutex<HashMap<String, Vec<String>>> = Mutex::new(HashMap::new());
-}
+static TRAIT_DEFS: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+static ENUM_DEFS: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+static DEFERRED_LINKS: Lazy<Mutex<HashMap<String, Vec<String>>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Store a trait definition for future reference.
 pub fn cache_trait(item: syn::ItemTrait) {

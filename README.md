@@ -203,7 +203,7 @@ Additionally, parsed syntax items in `syn` are `!Send` and `!Sync`.
 This is for good reason -- with multithreaded compilation and macro expansion, there are no guarantees on the order or lifetime of a reference to any given block of code.
 Unfortunately, it also prevents referencing syntax between separate macro invocations.
 
-In the interest of convenience, `enum_dispatch` circumvents these restrictions by converting syntax into a `String` and storing it in `lazy_static`ally initialized `Mutex<HashMap<String, String>>`s whose keys are either the trait or enum names.
+In the interest of convenience, `enum_dispatch` circumvents these restrictions by converting syntax into a `String` and storing it in `once_cell` lazily initialized `Mutex<HashMap<String, String>>`s whose keys are either the trait or enum names.
 
 There is also a similar `HashMap` dedicated to "deferred" links, since definitions in different files could be encountered in arbitrary orders.
 If a linking attribute (with one argument) occurs before the corresponding registry attribute (with no arguments), the argument will be stored as a deferred link.
