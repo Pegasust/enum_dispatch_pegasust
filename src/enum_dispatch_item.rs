@@ -45,7 +45,7 @@ impl syn::parse::Parse for EnumDispatchItem {
             enum_token,
             ident,
             generics: syn::Generics {
-                where_clause: where_clause,
+                where_clause,
                 ..generics
             },
             brace_token,

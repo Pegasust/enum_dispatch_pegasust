@@ -14,13 +14,11 @@ pub enum ParsedItem {
 /// Parses any syntax item that was annotated with the `enum_dispatch` attribute and returns its
 /// itemized results.
 pub fn parse_attributed(item: proc_macro::TokenStream) -> Result<ParsedItem, ()> {
-    match syn::parse(item.clone()) {
-        Ok(enumdef) => return Ok(ParsedItem::EnumDispatch(enumdef)),
-        Err(_) => (),
-    };
-    match syn::parse(item) {
-        Ok(traitdef) => return Ok(ParsedItem::Trait(traitdef)),
-        Err(_) => (),
-    };
-    Err(())
+    if let Ok(enumdef) = syn::parse(item.clone()) {
+        Ok(ParsedItem::EnumDispatch(enumdef))
+    } else if let Ok(traitdef) = syn::parse(item) {
+        Ok(ParsedItem::Trait(traitdef))
+    } else {
+        Err(())
+    }
 }

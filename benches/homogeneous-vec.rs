@@ -68,7 +68,7 @@ mod benches {
     fn boxdyn_homogeneous_vec(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
 
-        let mut dispatches: Vec<Box<ReturnsValue>> = vec![];
+        let mut dispatches: Vec<Box<dyn ReturnsValue>> = vec![];
         for _ in 0..VEC_SIZE {
             if rng.gen() {
                 dispatches.push(Box::new(Zero));
