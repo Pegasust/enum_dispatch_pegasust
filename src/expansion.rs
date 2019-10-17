@@ -139,19 +139,21 @@ fn extract_fn_args(
     let new_args: Vec<syn::Ident> = trait_args
         .iter()
         .filter_map(|arg| match arg {
-            syn::FnArg::SelfRef(_) => {
+            syn::FnArg::Receiver(syn::Receiver { reference: Some(_), .. }) => {
                 method_type = MethodType::ByReference;
                 None
             }
-            syn::FnArg::SelfValue(_) => {
+            syn::FnArg::Receiver(syn::Receiver { reference: None, .. }) => {
                 method_type = MethodType::ByValue;
                 None
             }
-            syn::FnArg::Captured(syn::ArgCaptured {
-                pat: syn::Pat::Ident(syn::PatIdent { ident, .. }),
-                ..
-            }) => Some(ident.to_owned()),
-            _ => panic!("Unsupported argument type"),
+            syn::FnArg::Typed(syn::PatType { pat, .. }) => {
+                if let syn::Pat::Ident(syn::PatIdent { ident, .. }) = &**pat {
+                    Some(ident.to_owned())
+                } else {
+                    panic!("Unsupported argument type")
+                }
+            }
         }).collect();
     let args = {
         let mut args = syn::punctuated::Punctuated::new();
@@ -166,7 +168,7 @@ fn extract_fn_args(
 /// Creates a method call that can be used in the match arms of all non-static method
 /// implementations.
 fn create_trait_fn_call(trait_method: &syn::TraitItemMethod) -> syn::ExprCall {
-    let trait_args = trait_method.to_owned().sig.decl.inputs;
+    let trait_args = trait_method.to_owned().sig.inputs;
     let (method_type, args) = extract_fn_args(trait_args);
 
     syn::ExprCall {
@@ -208,19 +210,17 @@ fn create_match_expr(
         .map(|variant| {
             let variant_name = &variant.ident;
             syn::Arm {
-            attrs: vec![],
-            leading_vert: None,
-            pats: {
-                let mut segments = syn::punctuated::Punctuated::new();
-                let fieldname = syn::Ident::new(FIELDNAME, variant.span());
-                segments.push(syn::parse_quote! {#enum_name::#variant_name(#fieldname)});
-                segments
-            },
-            guard: None,
-            fat_arrow_token: Default::default(),
-            body: Box::new(syn::Expr::from(trait_fn_call.to_owned())),
-            comma: Some(Default::default()),
-        }}).collect();
+                attrs: vec![],
+                pat: {
+                    let fieldname = syn::Ident::new(FIELDNAME, variant.span());
+                    syn::parse_quote! {#enum_name::#variant_name(#fieldname)}
+                },
+                guard: None,
+                fat_arrow_token: Default::default(),
+                body: Box::new(syn::Expr::from(trait_fn_call.to_owned())),
+                comma: Some(Default::default()),
+            }
+        }).collect();
 
     // Creates the match expression
     syn::Expr::from(syn::ExprMatch {
@@ -262,7 +262,7 @@ fn create_trait_match(
                     style: syn::AttrStyle::Outer,
                     bracket_token: Default::default(),
                     path: syn::parse_str("inline").unwrap(),
-                    tts: proc_macro::TokenStream::new().into(),
+                    tokens: proc_macro::TokenStream::new().into(),
                 }],
                 vis: syn::Visibility::Inherited,
                 defaultness: None,
