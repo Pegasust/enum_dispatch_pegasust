@@ -103,7 +103,7 @@ fn generate_try_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchV
             let impl_block = quote! {
                 impl #impl_generics std::convert::TryFrom<#enumname #ty_generics > for #variant_type #where_clause {
                     type Error = &'static str;
-                    fn try_from(e: #enumname #ty_generics ) -> Result<Self, Self::Error> {
+                    fn try_from(e: #enumname #ty_generics ) -> ::std::result::Result<Self, Self::Error> {
                         match e {
                             #enumname::#variant_name(v) => {Ok(v)},
                             #(  #repeated::#other(v) => {
