@@ -35,5 +35,5 @@ fn main() {
     let a: MyBehaviorEnum = MyImplementorA {}.into();
     a.my_trait_method();
 
-    let a: MyImplementorA = a.try_into().unwrap();
+    let _a: MyImplementorA = a.try_into().unwrap();
 }

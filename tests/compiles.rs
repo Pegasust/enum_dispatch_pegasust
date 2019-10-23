@@ -1,5 +1,5 @@
 use enum_dispatch::enum_dispatch;
-use std::convert::TryFrom;
+use core::convert::TryInto;
 
 #[enum_dispatch(Traited)]
 trait TestTrait {
@@ -158,14 +158,14 @@ fn main() {
     let d: Traited = D {
         a_string: "contained D".to_string(),
     }.into();
-    let d_from_d = D::try_from(d);
+    let d_from_d: Result<D, _> = d.try_into();
     assert!(d_from_d.is_ok());
 
     let c = Traited::from(C {
         custom_string: "the letter C".to_string(),
         custom_number: 4.2,
     });
-    let d_from_c = D::try_from(c);
+    let d_from_c: Result<D, _> = c.try_into();
     assert!(d_from_c.is_err());
     assert_eq!(d_from_c.err().unwrap(), "Tried to convert variant C to LetterD");
 }

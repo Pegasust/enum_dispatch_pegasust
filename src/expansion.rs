@@ -49,9 +49,9 @@ pub fn add_enum_impls(enum_def: EnumDispatchItem, traitdef: syn::ItemTrait) -> p
         from_impl.to_tokens(&mut impls);
     }
 
-    let try_from_impls = generate_try_from_impls(&enum_def.ident, &variants, &trait_impl.generics);
-    for try_from_impl in try_from_impls.iter() {
-        try_from_impl.to_tokens(&mut impls);
+    let try_into_impls = generate_try_into_impls(&enum_def.ident, &variants, &trait_impl.generics);
+    for try_into_impl in try_into_impls.iter() {
+        try_into_impl.to_tokens(&mut impls);
     }
 
     trait_impl.to_tokens(&mut impls);
@@ -77,8 +77,8 @@ fn generate_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVaria
         }).collect()
 }
 
-/// Generates impls of core::convert::TryFrom for each enum variant.
-fn generate_try_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVariant], generics: &syn::Generics) -> Vec<syn::ItemImpl> {
+/// Generates impls of core::convert::TryInto for each enum variant.
+fn generate_try_into_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVariant], generics: &syn::Generics) -> Vec<syn::ItemImpl> {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     enumvariants
         .iter()
@@ -101,10 +101,10 @@ fn generate_try_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchV
             let repeated = core::iter::repeat(&enumname);
 
             let impl_block = quote! {
-                impl #impl_generics core::convert::TryFrom<#enumname #ty_generics > for #variant_type #where_clause {
+                impl #impl_generics core::convert::TryInto<#variant_type> for #enumname #ty_generics #where_clause {
                     type Error = &'static str;
-                    fn try_from(e: #enumname #ty_generics ) -> ::core::result::Result<Self, Self::Error> {
-                        match e {
+                    fn try_into(self) -> ::core::result::Result<#variant_type, Self::Error> {
+                        match self {
                             #enumname::#variant_name(v) => {Ok(v)},
                             #(  #repeated::#other(v) => {
                                 Err(concat!("Tried to convert variant ",
