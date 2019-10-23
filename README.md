@@ -115,7 +115,7 @@ enum Fails {
 }
 ```
 
-This is because the enum must be correctly parseable before macro expansion. Instead, import the types first:
+This is because the enum must be correctly parsable before macro expansion. Instead, import the types first:
 
 ```rust
 use crate::A::TypeA;
