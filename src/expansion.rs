@@ -58,7 +58,7 @@ pub fn add_enum_impls(enum_def: EnumDispatchItem, traitdef: syn::ItemTrait) -> p
     impls
 }
 
-/// Generates impls of std::convert::From for each enum variant.
+/// Generates impls of core::convert::From for each enum variant.
 fn generate_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVariant], generics: &syn::Generics) -> Vec<syn::ItemImpl> {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     enumvariants
@@ -67,7 +67,7 @@ fn generate_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVaria
             let variant_name = &variant.ident;
             let variant_type = &variant.ty;
             let impl_block = quote! {
-                impl #impl_generics ::std::convert::From<#variant_type> for #enumname #ty_generics #where_clause {
+                impl #impl_generics ::core::convert::From<#variant_type> for #enumname #ty_generics #where_clause {
                     fn from(v: #variant_type) -> #enumname #ty_generics {
                         #enumname::#variant_name(v)
                     }
@@ -77,7 +77,7 @@ fn generate_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVaria
         }).collect()
 }
 
-/// Generates impls of std::convert::TryFrom for each enum variant.
+/// Generates impls of core::convert::TryFrom for each enum variant.
 fn generate_try_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVariant], generics: &syn::Generics) -> Vec<syn::ItemImpl> {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     enumvariants
@@ -97,13 +97,13 @@ fn generate_try_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchV
                 .filter_map(
                     |(j, other)| if i != j { Some(&other.ident) } else { None });
             let from_str = other.clone().map(|ident| ident.to_string());
-            let to_str = std::iter::repeat(variant_name.to_string());
-            let repeated = std::iter::repeat(&enumname);
+            let to_str = core::iter::repeat(variant_name.to_string());
+            let repeated = core::iter::repeat(&enumname);
 
             let impl_block = quote! {
-                impl #impl_generics std::convert::TryFrom<#enumname #ty_generics > for #variant_type #where_clause {
+                impl #impl_generics core::convert::TryFrom<#enumname #ty_generics > for #variant_type #where_clause {
                     type Error = &'static str;
-                    fn try_from(e: #enumname #ty_generics ) -> ::std::result::Result<Self, Self::Error> {
+                    fn try_from(e: #enumname #ty_generics ) -> ::core::result::Result<Self, Self::Error> {
                         match e {
                             #enumname::#variant_name(v) => {Ok(v)},
                             #(  #repeated::#other(v) => {
