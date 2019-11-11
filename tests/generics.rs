@@ -32,3 +32,19 @@ pub enum AnyFoo<T: Bar> {
     SuperFoo(SuperFoo<T>),
     UltraFoo(UltraFoo<T>),
 }
+
+#[enum_dispatch]
+pub trait Faz {}
+
+use std::marker::PhantomData;
+pub struct SuperFaz<'a>(PhantomData<&'a u8>);
+pub struct UltraFaz();
+
+impl<'a> Faz for SuperFaz<'a> {}
+impl Faz for UltraFaz {}
+
+#[enum_dispatch(Faz)]
+pub enum AnyFaz<'a> {
+    SuperFaz(SuperFaz<'a>),
+    UltraFaz(UltraFaz),
+}
