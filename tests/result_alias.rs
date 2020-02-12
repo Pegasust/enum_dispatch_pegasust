@@ -1,5 +1,6 @@
 // A Result alias should not affect the enum_dispatch macro
 #[allow(dead_code)]
+#[allow(unused_imports)]
 use std::io::Result;
 
 use enum_dispatch::enum_dispatch;
