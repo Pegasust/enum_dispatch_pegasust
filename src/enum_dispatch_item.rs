@@ -76,7 +76,7 @@ impl ::std::convert::From<EnumDispatchItem> for syn::ItemEnum {
         use ::std::iter::FromIterator;
         let variants: Vec<syn::Variant> = item.variants.iter().map(|variant: &EnumDispatchVariant| {
             syn::Variant {
-                attrs: vec![],
+                attrs: variant.attrs.to_owned(),
                 ident: variant.ident.to_owned(),
                 fields: syn::Fields::Unnamed(syn::FieldsUnnamed {
                     paren_token: Default::default(),
