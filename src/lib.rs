@@ -337,6 +337,8 @@ mod enum_dispatch_variant;
 mod expansion;
 /// Convenience trait for token parsing.
 mod filter_attrs;
+/// Convenience methods for constructing `syn` types.
+mod syn_utils;
 
 use crate::expansion::add_enum_impls;
 

@@ -8,6 +8,7 @@ use syn::spanned::Spanned;
 
 use crate::enum_dispatch_item::EnumDispatchItem;
 use crate::enum_dispatch_variant::EnumDispatchVariant;
+use crate::syn_utils::plain_identifier_expr;
 
 /// Name bound to the single enum field in generated match statements. It doesn't really matter
 /// what this is, as long as it's consistent across the left and right sides of generated match
@@ -39,9 +40,12 @@ pub fn add_enum_impls(
     let variants: Vec<&EnumDispatchVariant> = enum_def.variants.iter().collect();
 
     for trait_fn in traitfns {
-        trait_impl
-            .items
-            .push(create_trait_match(trait_fn, &enum_def.ident, &variants));
+        trait_impl.items.push(create_trait_match(
+            trait_fn,
+            &traitname,
+            &enum_def.ident,
+            &variants,
+        ));
     }
 
     let mut impls = proc_macro2::TokenStream::new();
@@ -173,9 +177,16 @@ fn extract_fn_args(
 
 /// Creates a method call that can be used in the match arms of all non-static method
 /// implementations.
-fn create_trait_fn_call(trait_method: &syn::TraitItemMethod) -> syn::ExprCall {
+fn create_trait_fn_call(
+    trait_method: &syn::TraitItemMethod,
+    trait_name: &syn::Ident,
+) -> syn::ExprCall {
     let trait_args = trait_method.to_owned().sig.inputs;
-    let (method_type, args) = extract_fn_args(trait_args);
+    let (method_type, mut args) = extract_fn_args(trait_args);
+
+    // Insert FIELDNAME at the beginning of the argument list for UCFS-style method calling
+    let explicit_self_arg = syn::Ident::new(FIELDNAME, trait_method.span());
+    args.insert(0, plain_identifier_expr(explicit_self_arg));
 
     syn::ExprCall {
         attrs: vec![],
@@ -191,9 +202,8 @@ fn create_trait_fn_call(trait_method: &syn::TraitItemMethod) -> syn::ExprCall {
                     "Static methods cannot be enum_dispatched (no self argument to match on)"
                 );
             } else {
-                let fieldname = syn::Ident::new(FIELDNAME, trait_method.span());
                 let trait_method_name = &trait_method.sig.ident;
-                Box::new(syn::parse_quote! { #fieldname.#trait_method_name })
+                Box::new(syn::parse_quote! { #trait_name::#trait_method_name })
             }
         },
         paren_token: Default::default(),
@@ -205,10 +215,11 @@ fn create_trait_fn_call(trait_method: &syn::TraitItemMethod) -> syn::ExprCall {
 /// binding to their single field and calling the provided trait method on each.
 fn create_match_expr(
     trait_method: &syn::TraitItemMethod,
+    trait_name: &syn::Ident,
     enum_name: &syn::Ident,
     enumvariants: &[&EnumDispatchVariant],
 ) -> syn::Expr {
-    let trait_fn_call = create_trait_fn_call(trait_method);
+    let trait_fn_call = create_trait_fn_call(trait_method, trait_name);
 
     // Creates a Vec containing a match arm for every enum variant
     let match_arms = enumvariants
@@ -232,21 +243,10 @@ fn create_match_expr(
     syn::Expr::from(syn::ExprMatch {
         attrs: vec![],
         match_token: Default::default(),
-        expr: Box::new(syn::Expr::from(syn::ExprPath {
-            attrs: vec![],
-            qself: None,
-            path: syn::Path {
-                leading_colon: None,
-                segments: {
-                    let mut segments = syn::punctuated::Punctuated::new();
-                    segments.push(syn::PathSegment {
-                        ident: syn::Ident::new("self", syn::export::Span::call_site()),
-                        arguments: syn::PathArguments::None,
-                    });
-                    segments
-                },
-            },
-        })),
+        expr: Box::new(plain_identifier_expr(syn::Ident::new(
+            "self",
+            syn::export::Span::call_site(),
+        ))),
         brace_token: Default::default(),
         arms: match_arms,
     })
@@ -255,12 +255,13 @@ fn create_match_expr(
 /// Builds an implementation of the given trait function for the given enum type.
 fn create_trait_match(
     trait_item: syn::TraitItem,
+    trait_name: &syn::Ident,
     enum_name: &syn::Ident,
     enumvariants: &[&EnumDispatchVariant],
 ) -> syn::ImplItem {
     match trait_item {
         syn::TraitItem::Method(trait_method) => {
-            let match_expr = create_match_expr(&trait_method, enum_name, enumvariants);
+            let match_expr = create_match_expr(&trait_method, trait_name, enum_name, enumvariants);
 
             syn::ImplItem::Method(syn::ImplItemMethod {
                 attrs: vec![syn::Attribute {
