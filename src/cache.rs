@@ -98,5 +98,5 @@ pub fn fulfilled_by_trait(defname: &::proc_macro2::Ident) -> Vec<enum_dispatch_i
 
 /// Returns true if From/TryInto was already defined for this enum
 pub fn conversion_impls_def_by_enum(item: &syn::Ident) -> bool {
-    ENUM_CONVERSION_IMPLS_DEFS.lock().unwrap().get(&item.to_string()).is_some()
+    ENUM_CONVERSION_IMPLS_DEFS.lock().unwrap().contains(&item.to_string())
 }
