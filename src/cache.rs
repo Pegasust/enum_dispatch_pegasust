@@ -13,7 +13,7 @@ use syn;
 
 use once_cell::sync::Lazy;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 
 use crate::enum_dispatch_item;
@@ -23,6 +23,7 @@ use crate::enum_dispatch_item;
 static TRAIT_DEFS: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 static ENUM_DEFS: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 static DEFERRED_LINKS: Lazy<Mutex<HashMap<String, Vec<String>>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+static ENUM_CONVERSION_IMPLS_DEFS: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 
 /// Store a trait definition for future reference.
 pub fn cache_trait(item: syn::ItemTrait) {
@@ -40,6 +41,12 @@ pub fn cache_enum_dispatch(item: enum_dispatch_item::EnumDispatchItem) {
         .lock()
         .unwrap()
         .insert(identname, item.into_token_stream().to_string());
+}
+
+/// Store whether a From/TryInto definition has been defined once for an enum.
+pub fn cache_enum_conversion_impls_defined(item: syn::Ident) {
+    let identname = item.to_string();
+    ENUM_CONVERSION_IMPLS_DEFS.lock().unwrap().insert(identname);
 }
 
 /// Cache a "link" to be fulfilled once the needed definition is also cached.
@@ -87,4 +94,9 @@ pub fn fulfilled_by_trait(defname: &::proc_macro2::Ident) -> Vec<enum_dispatch_i
             None => None,
         }
     }).collect()
+}
+
+/// Returns true if From/TryInto was already defined for this enum
+pub fn conversion_impls_def_by_enum(item: &syn::Ident) -> bool {
+    ENUM_CONVERSION_IMPLS_DEFS.lock().unwrap().get(&item.to_string()).is_some()
 }

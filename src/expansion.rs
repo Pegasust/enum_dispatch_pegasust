@@ -1,6 +1,6 @@
 //! Provides a utility for generating `enum_dispatch` impl blocks given `EnumDispatchItem` and
 //! `syn::ItemTrait` definitions.
-use crate::proc_macro;
+use crate::{cache, proc_macro};
 use proc_macro2;
 use quote::{quote, ToTokens};
 use syn;
@@ -44,16 +44,20 @@ pub fn add_enum_impls(
             .push(create_trait_match(trait_fn, &enum_def.ident, &variants));
     }
 
-    let from_impls = generate_from_impls(&enum_def.ident, &variants, &generics);
-
     let mut impls = proc_macro2::TokenStream::new();
-    for from_impl in from_impls.iter() {
-        from_impl.to_tokens(&mut impls);
-    }
 
-    let try_into_impls = generate_try_into_impls(&enum_def.ident, &variants, &trait_impl.generics);
-    for try_into_impl in try_into_impls.iter() {
-        try_into_impl.to_tokens(&mut impls);
+    // Only generate From impls once per enum_def
+    if !cache::conversion_impls_def_by_enum(&enum_def.ident) {
+        let from_impls = generate_from_impls(&enum_def.ident, &variants, &generics);
+        for from_impl in from_impls.iter() {
+            from_impl.to_tokens(&mut impls);
+        }
+
+        let try_into_impls = generate_try_into_impls(&enum_def.ident, &variants, &trait_impl.generics);
+        for try_into_impl in try_into_impls.iter() {
+            try_into_impl.to_tokens(&mut impls);
+        }
+        cache::cache_enum_conversion_impls_defined(enum_def.ident.clone());
     }
 
     trait_impl.to_tokens(&mut impls);
