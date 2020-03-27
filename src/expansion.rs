@@ -47,19 +47,17 @@ pub fn add_enum_impls(
     let mut impls = proc_macro2::TokenStream::new();
 
     // Only generate From impls once per enum_def
-    if !cache::from_def_by_enum(&enum_def.ident) {
+    if !cache::conversion_impls_def_by_enum(&enum_def.ident) {
         let from_impls = generate_from_impls(&enum_def.ident, &variants, &generics);
         for from_impl in from_impls.iter() {
             from_impl.to_tokens(&mut impls);
         }
-    }
 
-    // Only generate From impls once per enum_def
-    if !cache::try_into_def_by_enum(&enum_def.ident) {
         let try_into_impls = generate_try_into_impls(&enum_def.ident, &variants, &trait_impl.generics);
         for try_into_impl in try_into_impls.iter() {
             try_into_impl.to_tokens(&mut impls);
         }
+        cache::cache_enum_conversion_impls_defined(enum_def.ident.clone());
     }
 
     trait_impl.to_tokens(&mut impls);
@@ -67,7 +65,7 @@ pub fn add_enum_impls(
 }
 
 /// Generates impls of core::convert::From for each enum variant.
-fn generate_from_impls( enumname: &syn::Ident, enumvariants: &[&EnumDispatchVariant], generics: &syn::Generics) -> Vec<syn::ItemImpl> {
+fn generate_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVariant], generics: &syn::Generics) -> Vec<syn::ItemImpl> {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     enumvariants
         .iter()
@@ -81,7 +79,6 @@ fn generate_from_impls( enumname: &syn::Ident, enumvariants: &[&EnumDispatchVari
                     }
                 }
             };
-            cache::cache_from_enum_defined(enumname.clone());
             syn::parse(impl_block.into()).unwrap()
         }).collect()
 }
@@ -122,7 +119,6 @@ fn generate_try_into_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchV
                     }
                 }
             };
-            cache::cache_try_into_enum_defined(enumname.clone());
             syn::parse(impl_block.into()).unwrap()
         }).collect()
 }

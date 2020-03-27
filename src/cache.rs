@@ -13,7 +13,7 @@ use syn;
 
 use once_cell::sync::Lazy;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 
 use crate::enum_dispatch_item;
@@ -23,8 +23,7 @@ use crate::enum_dispatch_item;
 static TRAIT_DEFS: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 static ENUM_DEFS: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 static DEFERRED_LINKS: Lazy<Mutex<HashMap<String, Vec<String>>>> = Lazy::new(|| Mutex::new(HashMap::new()));
-static FROM_ENUM_DEFS: Lazy<Mutex<HashMap<String, bool>>> = Lazy::new(|| Mutex::new(HashMap::new()));
-static TRY_INTO_ENUM_DEFS: Lazy<Mutex<HashMap<String, bool>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+static ENUM_CONVERSION_IMPLS_DEFS: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 
 /// Store a trait definition for future reference.
 pub fn cache_trait(item: syn::ItemTrait) {
@@ -44,16 +43,10 @@ pub fn cache_enum_dispatch(item: enum_dispatch_item::EnumDispatchItem) {
         .insert(identname, item.into_token_stream().to_string());
 }
 
-/// Store whether a From definition has been defined once for an enum.
-pub fn cache_from_enum_defined(item: syn::Ident) {
+/// Store whether a From/TryInto definition has been defined once for an enum.
+pub fn cache_enum_conversion_impls_defined(item: syn::Ident) {
     let identname = item.to_string();
-    FROM_ENUM_DEFS.lock().unwrap().insert(identname, true);
-}
-
-/// Store whether a TryInto definition has been defined once for an enum.
-pub fn cache_try_into_enum_defined(item: syn::Ident) {
-    let identname = item.to_string();
-    TRY_INTO_ENUM_DEFS.lock().unwrap().insert(identname, true);
+    ENUM_CONVERSION_IMPLS_DEFS.lock().unwrap().insert(identname);
 }
 
 /// Cache a "link" to be fulfilled once the needed definition is also cached.
@@ -103,18 +96,7 @@ pub fn fulfilled_by_trait(defname: &::proc_macro2::Ident) -> Vec<enum_dispatch_i
     }).collect()
 }
 
-/// Returns true if From was already defined for this enum
-pub fn from_def_by_enum(item: &syn::Ident) -> bool {
-    match FROM_ENUM_DEFS.lock().unwrap().get(&item.to_string()) {
-        Some(entry) => *entry,
-        None => false,
-    }
-}
-
-/// Returns true if TryInto was already defined for this enum
-pub fn try_into_def_by_enum(item: &syn::Ident) -> bool {
-    match TRY_INTO_ENUM_DEFS.lock().unwrap().get(&item.to_string()) {
-        Some(entry) => *entry,
-        None => false,
-    }
+/// Returns true if From/TryInto was already defined for this enum
+pub fn conversion_impls_def_by_enum(item: &syn::Ident) -> bool {
+    ENUM_CONVERSION_IMPLS_DEFS.lock().unwrap().get(&item.to_string()).is_some()
 }
