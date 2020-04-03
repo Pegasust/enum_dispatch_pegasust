@@ -1,5 +1,5 @@
-use enum_derive::{EnumInnerAsTrait, EnumFromInner, enum_derive_util};
 use custom_derive::custom_derive;
+use enum_derive::{enum_derive_util, EnumFromInner, EnumInnerAsTrait};
 use enum_dispatch::enum_dispatch;
 
 mod zero;

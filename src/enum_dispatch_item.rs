@@ -6,9 +6,7 @@
 //! specified as a `syn::Type` rather than a `syn::Variant`. In the case of basic unit fields named
 //! after existing scoped types, a normal Rust enum can be parsed as an EnumDispatchItem without
 //! issue.
-use syn;
 use quote::TokenStreamExt;
-use proc_macro2;
 
 use crate::enum_dispatch_variant::EnumDispatchVariant;
 use crate::filter_attrs::FilterAttrs;
@@ -49,7 +47,7 @@ impl syn::parse::Parse for EnumDispatchItem {
                 ..generics
             },
             brace_token,
-            variants
+            variants,
         })
     }
 }
@@ -74,8 +72,10 @@ impl syn::export::quote::ToTokens for EnumDispatchItem {
 impl ::std::convert::From<EnumDispatchItem> for syn::ItemEnum {
     fn from(item: EnumDispatchItem) -> syn::ItemEnum {
         use ::std::iter::FromIterator;
-        let variants: Vec<syn::Variant> = item.variants.iter().map(|variant: &EnumDispatchVariant| {
-            syn::Variant {
+        let variants: Vec<syn::Variant> = item
+            .variants
+            .iter()
+            .map(|variant: &EnumDispatchVariant| syn::Variant {
                 attrs: variant.attrs.to_owned(),
                 ident: variant.ident.to_owned(),
                 fields: syn::Fields::Unnamed(syn::FieldsUnnamed {
@@ -93,8 +93,8 @@ impl ::std::convert::From<EnumDispatchItem> for syn::ItemEnum {
                     },
                 }),
                 discriminant: None,
-            }
-        }).collect();
+            })
+            .collect();
         syn::ItemEnum {
             attrs: item.attrs,
             vis: item.vis,

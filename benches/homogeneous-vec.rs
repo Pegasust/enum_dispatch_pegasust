@@ -11,13 +11,13 @@
 extern crate test;
 
 mod common_structs;
-use crate::common_structs::{EnumDispatched, DynamicDispatched, ReturnsValue, Zero, One};
+use crate::common_structs::{DynamicDispatched, EnumDispatched, One, ReturnsValue, Zero};
 
 #[cfg(test)]
 mod benches {
     use super::*;
-    use test::Bencher;
     use rand::Rng;
+    use test::Bencher;
 
     const ITERATIONS: usize = 1000000;
     const VEC_SIZE: usize = 1024;
@@ -30,8 +30,7 @@ mod benches {
         for _ in 0..VEC_SIZE {
             if rng.gen() {
                 dispatches.push(EnumDispatched::from(Zero));
-            }
-            else {
+            } else {
                 dispatches.push(EnumDispatched::from(One));
             }
         }
@@ -51,8 +50,7 @@ mod benches {
         for _ in 0..VEC_SIZE {
             if rng.gen() {
                 dispatches.push(DynamicDispatched::from(Zero));
-            }
-            else {
+            } else {
                 dispatches.push(DynamicDispatched::from(One));
             }
         }
@@ -72,8 +70,7 @@ mod benches {
         for _ in 0..VEC_SIZE {
             if rng.gen() {
                 dispatches.push(Box::new(Zero));
-            }
-            else {
+            } else {
                 dispatches.push(Box::new(One));
             }
         }
@@ -96,8 +93,7 @@ mod benches {
         for _ in 0..VEC_SIZE {
             if rng.gen() {
                 dispatches.push(&t0);
-            }
-            else {
+            } else {
                 dispatches.push(&t1);
             }
         }

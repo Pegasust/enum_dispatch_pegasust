@@ -1,5 +1,5 @@
-use enum_dispatch::enum_dispatch;
 use core::convert::TryInto;
+use enum_dispatch::enum_dispatch;
 
 #[enum_dispatch(Traited)]
 trait TestTrait {
@@ -21,9 +21,7 @@ impl TestTrait for A {
         format!("A{},{}", arg1, arg2)
     }
 
-    fn mutable(&mut self, _argument: f32) {
-
-    }
+    fn mutable(&mut self, _argument: f32) {}
 
     fn self_by_value(self, argument: f32) -> f32 {
         argument + 1.
@@ -43,9 +41,7 @@ impl TestTrait for B {
         format!("B{},{}", arg1, arg2)
     }
 
-    fn mutable(&mut self, _argument: f32) {
-
-    }
+    fn mutable(&mut self, _argument: f32) {}
 
     fn self_by_value(self, argument: f32) -> f32 {
         argument + 2.
@@ -62,7 +58,12 @@ impl TestTrait for C {
     }
 
     fn has_args(&self, arg1: usize, arg2: &str) -> String {
-        format!("C{},{}+{}", self.custom_number * arg1 as f64, arg2, self.custom_string)
+        format!(
+            "C{},{}+{}",
+            self.custom_number * arg1 as f64,
+            arg2,
+            self.custom_string
+        )
     }
 
     fn mutable(&mut self, argument: f32) {
@@ -124,7 +125,8 @@ fn main() {
     });
     let mut d: Traited = D {
         a_string: "contained D".to_string(),
-    }.into();
+    }
+    .into();
 
     match d {
         Traited::A(_) => assert!(false),
@@ -144,8 +146,14 @@ fn main() {
     assert_eq!(d.default_impl().len(), 15);
     assert_eq!(a.has_args(10, "Argument of A"), "A10,Argument of A");
     assert_eq!(b.has_args(29, "B's argument"), "B29,B's argument");
-    assert_eq!(c.has_args(42, "a C parameter"), "C176.4,a C parameter+the letter C");
-    assert_eq!(d.has_args(800, "provided to D"), "D800,provided to D ==> contained D");
+    assert_eq!(
+        c.has_args(42, "a C parameter"),
+        "C176.4,a C parameter+the letter C"
+    );
+    assert_eq!(
+        d.has_args(800, "provided to D"),
+        "D800,provided to D ==> contained D"
+    );
     a.mutable(9.0);
     b.mutable(10.0);
     c.mutable(11.0);
@@ -157,7 +165,8 @@ fn main() {
 
     let d: Traited = D {
         a_string: "contained D".to_string(),
-    }.into();
+    }
+    .into();
     let d_from_d: Result<D, _> = d.try_into();
     assert!(d_from_d.is_ok());
 
@@ -167,5 +176,8 @@ fn main() {
     });
     let d_from_c: Result<D, _> = c.try_into();
     assert!(d_from_c.is_err());
-    assert_eq!(d_from_c.err().unwrap(), "Tried to convert variant C to LetterD");
+    assert_eq!(
+        d_from_c.err().unwrap(),
+        "Tried to convert variant C to LetterD"
+    );
 }

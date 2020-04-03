@@ -1,6 +1,6 @@
 use enum_dispatch::enum_dispatch;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[enum_dispatch]
 trait Shaped {
@@ -57,19 +57,24 @@ fn through_serde() {
 
     let shapes: Vec<Shape> = vec![rectangle, square, circle];
 
-    let serialized_shapes: Vec<String> = shapes.iter().map(|s| {
-        serde_json::to_string(&s).unwrap()
-    }).collect();
+    let serialized_shapes: Vec<String> = shapes
+        .iter()
+        .map(|s| serde_json::to_string(&s).unwrap())
+        .collect();
 
-    assert_eq!(serialized_shapes, [
-               "{\"Rectangle\":{\"w\":10.0,\"h\":20.0}}",
-               "{\"Square\":{\"s\":15.0}}",
-               "{\"Circle\":{\"r\":10.0}}"
-    ]);
+    assert_eq!(
+        serialized_shapes,
+        [
+            "{\"Rectangle\":{\"w\":10.0,\"h\":20.0}}",
+            "{\"Square\":{\"s\":15.0}}",
+            "{\"Circle\":{\"r\":10.0}}"
+        ]
+    );
 
-    let deserialized_shapes: Vec<Shape> = serialized_shapes.iter().map(|s| {
-        serde_json::from_str(&s).unwrap()
-    }).collect();
+    let deserialized_shapes: Vec<Shape> = serialized_shapes
+        .iter()
+        .map(|s| serde_json::from_str(&s).unwrap())
+        .collect();
 
     for (shape, new_shape) in shapes.iter().zip(deserialized_shapes.iter()) {
         assert_eq!(shape, new_shape);

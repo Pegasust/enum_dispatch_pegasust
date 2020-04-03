@@ -314,15 +314,12 @@
 
 #![doc(
     html_logo_url = "https://gitlab.com/antonok/enum_dispatch/raw/master/enum_dispatch.svg",
-    html_favicon_url = "https://gitlab.com/antonok/enum_dispatch/raw/master/enum_dispatch.svg",
+    html_favicon_url = "https://gitlab.com/antonok/enum_dispatch/raw/master/enum_dispatch.svg"
 )]
 
 extern crate proc_macro;
 
-use proc_macro::{
-    TokenStream,
-    TokenTree
-};
+use proc_macro::{TokenStream, TokenTree};
 use quote::{ToTokens, TokenStreamExt};
 
 /// Used for converting a macro input into an ItemTrait or an EnumDispatchItem.
@@ -364,7 +361,9 @@ pub fn enum_dispatch(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
         attributed_parser::ParsedItem::EnumDispatch(enumdef) => {
             cache::cache_enum_dispatch(enumdef.clone());
-            syn::ItemEnum::from(enumdef.to_owned()).into_token_stream().into()
+            syn::ItemEnum::from(enumdef.to_owned())
+                .into_token_stream()
+                .into()
         }
     };
     let mut expanded = proc_macro2::TokenStream::from(expanded);
@@ -383,26 +382,30 @@ pub fn enum_dispatch(attr: TokenStream, item: TokenStream) -> TokenStream {
             panic!("Too many arguments to enum_dispatch");
         }
         match &new_block {
-            attributed_parser::ParsedItem::Trait(traitdef) => cache::defer_link(&attr_name, &traitdef.ident),
-            attributed_parser::ParsedItem::EnumDispatch(enumdef) => cache::defer_link(&attr_name, &enumdef.ident),
+            attributed_parser::ParsedItem::Trait(traitdef) => {
+                cache::defer_link(&attr_name, &traitdef.ident)
+            }
+            attributed_parser::ParsedItem::EnumDispatch(enumdef) => {
+                cache::defer_link(&attr_name, &enumdef.ident)
+            }
         }
     };
     // It would be much simpler to just always retrieve both definitions from the cache.
     // However, span information is not stored in the cache. Saving the newly retrieved
     // definition prevents *all* of the span information from being lost.
-    match new_block.clone() {
+    match new_block {
         attributed_parser::ParsedItem::Trait(traitdef) => {
             let additional_enums = cache::fulfilled_by_trait(&traitdef.ident);
             for enumdef in additional_enums {
                 expanded.append_all(add_enum_impls(enumdef, traitdef.clone()));
             }
-        },
+        }
         attributed_parser::ParsedItem::EnumDispatch(enumdef) => {
             let additional_traits = cache::fulfilled_by_enum(&enumdef.ident);
             for traitdef in additional_traits {
                 expanded.append_all(add_enum_impls(enumdef.clone(), traitdef));
             }
-        },
+        }
     }
     expanded.into()
 }

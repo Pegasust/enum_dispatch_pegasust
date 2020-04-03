@@ -19,7 +19,7 @@ mod scope1 {
 mod scope2 {
     use crate::scope1::{Item, Subitem1};
     use enum_dispatch::enum_dispatch;
-    
+
     pub struct Subitem2;
     impl Itemized for Subitem2 {
         fn do_it(&self) -> u8 {

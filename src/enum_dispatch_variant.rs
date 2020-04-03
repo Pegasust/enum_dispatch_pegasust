@@ -7,9 +7,7 @@
 
 use std::iter::FromIterator;
 
-use syn;
 use quote::TokenStreamExt;
-use proc_macro2;
 
 use crate::filter_attrs::FilterAttrs;
 
@@ -31,7 +29,9 @@ impl syn::parse::Parse for EnumDispatchVariant {
         } else if input.peek(syn::token::Paren) {
             let input: syn::FieldsUnnamed = input.parse()?;
             let mut fields = input.unnamed.iter();
-            let field_1 = fields.next().expect("Named enum_dispatch variants must have one unnamed field");
+            let field_1 = fields
+                .next()
+                .expect("Named enum_dispatch variants must have one unnamed field");
             if fields.next().is_some() {
                 panic!("Named enum_dispatch variants can only have one unnamed field");
             }
@@ -39,11 +39,7 @@ impl syn::parse::Parse for EnumDispatchVariant {
         } else {
             into_type(ident.clone())
         };
-        Ok(EnumDispatchVariant {
-            attrs,
-            ident,
-            ty,
-        })
+        Ok(EnumDispatchVariant { attrs, ident, ty })
     }
 }
 
@@ -71,9 +67,9 @@ fn into_type(ident: syn::Ident) -> syn::Type {
             leading_colon: None,
             segments: syn::punctuated::Punctuated::from_iter(vec![syn::PathSegment {
                 arguments: syn::PathArguments::None,
-                ident: ident.to_owned()
-            }])
+                ident,
+            }]),
         },
-        qself: None
+        qself: None,
     })
 }

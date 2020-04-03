@@ -1,22 +1,18 @@
 #![no_std]
 
-use enum_dispatch::enum_dispatch;
 use core::convert::TryInto;
+use enum_dispatch::enum_dispatch;
 
-struct MyImplementorA {
-}
+struct MyImplementorA {}
 
 impl MyBehavior for MyImplementorA {
-    fn my_trait_method(&self) {
-    }
+    fn my_trait_method(&self) {}
 }
 
-struct MyImplementorB {
-}
+struct MyImplementorB {}
 
 impl MyBehavior for MyImplementorB {
-    fn my_trait_method(&self) {
-    }
+    fn my_trait_method(&self) {}
 }
 
 #[enum_dispatch]

@@ -1,17 +1,17 @@
-use enum_dispatch::enum_dispatch;
 use core::convert::TryInto;
+use enum_dispatch::enum_dispatch;
 
 #[enum_dispatch]
 trait IsAttribute {
     fn size(&self) -> usize;
 }
 
-impl IsAttribute for Vec<f32>{
+impl IsAttribute for Vec<f32> {
     fn size(&self) -> usize {
         self.len() * std::mem::size_of::<f32>()
     }
 }
-impl IsAttribute for Vec<f64>{
+impl IsAttribute for Vec<f64> {
     fn size(&self) -> usize {
         self.len() * std::mem::size_of::<f64>()
     }

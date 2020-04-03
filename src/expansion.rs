@@ -1,9 +1,7 @@
 //! Provides a utility for generating `enum_dispatch` impl blocks given `EnumDispatchItem` and
 //! `syn::ItemTrait` definitions.
 use crate::{cache, proc_macro};
-use proc_macro2;
 use quote::{quote, ToTokens};
-use syn;
 use syn::spanned::Spanned;
 
 use crate::enum_dispatch_item::EnumDispatchItem;
@@ -24,7 +22,11 @@ pub fn add_enum_impls(
     let traitname = traitdef.ident;
     let traitfns = traitdef.items;
 
-    let generics = if traitdef.generics.lt_token.is_some() { &traitdef.generics } else { &enum_def.generics };
+    let generics = if traitdef.generics.lt_token.is_some() {
+        &traitdef.generics
+    } else {
+        &enum_def.generics
+    };
     let (_, enum_ty, _) = &traitdef.generics.split_for_impl();
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     let enumname = &enum_def.ident.to_owned();
@@ -57,7 +59,8 @@ pub fn add_enum_impls(
             from_impl.to_tokens(&mut impls);
         }
 
-        let try_into_impls = generate_try_into_impls(&enum_def.ident, &variants, &trait_impl.generics);
+        let try_into_impls =
+            generate_try_into_impls(&enum_def.ident, &variants, &trait_impl.generics);
         for try_into_impl in try_into_impls.iter() {
             try_into_impl.to_tokens(&mut impls);
         }
@@ -69,7 +72,11 @@ pub fn add_enum_impls(
 }
 
 /// Generates impls of core::convert::From for each enum variant.
-fn generate_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVariant], generics: &syn::Generics) -> Vec<syn::ItemImpl> {
+fn generate_from_impls(
+    enumname: &syn::Ident,
+    enumvariants: &[&EnumDispatchVariant],
+    generics: &syn::Generics,
+) -> Vec<syn::ItemImpl> {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     enumvariants
         .iter()
@@ -88,7 +95,11 @@ fn generate_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVaria
 }
 
 /// Generates impls of core::convert::TryInto for each enum variant.
-fn generate_try_into_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVariant], generics: &syn::Generics) -> Vec<syn::ItemImpl> {
+fn generate_try_into_impls(
+    enumname: &syn::Ident,
+    enumvariants: &[&EnumDispatchVariant],
+    generics: &syn::Generics,
+) -> Vec<syn::ItemImpl> {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
     enumvariants
         .iter()
@@ -149,11 +160,15 @@ fn extract_fn_args(
     let new_args: Vec<syn::Ident> = trait_args
         .iter()
         .filter_map(|arg| match arg {
-            syn::FnArg::Receiver(syn::Receiver { reference: Some(_), .. }) => {
+            syn::FnArg::Receiver(syn::Receiver {
+                reference: Some(_), ..
+            }) => {
                 method_type = MethodType::ByReference;
                 None
             }
-            syn::FnArg::Receiver(syn::Receiver { reference: None, .. }) => {
+            syn::FnArg::Receiver(syn::Receiver {
+                reference: None, ..
+            }) => {
                 method_type = MethodType::ByValue;
                 None
             }
@@ -164,7 +179,8 @@ fn extract_fn_args(
                     panic!("Unsupported argument type")
                 }
             }
-        }).collect();
+        })
+        .collect();
     let args = {
         let mut args = syn::punctuated::Punctuated::new();
         new_args.iter().for_each(|arg| {
@@ -237,7 +253,8 @@ fn create_match_expr(
                 body: Box::new(syn::Expr::from(trait_fn_call.to_owned())),
                 comma: Some(Default::default()),
             }
-        }).collect();
+        })
+        .collect();
 
     // Creates the match expression
     syn::Expr::from(syn::ExprMatch {

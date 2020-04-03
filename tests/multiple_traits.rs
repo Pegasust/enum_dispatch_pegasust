@@ -1,5 +1,5 @@
-use enum_dispatch::enum_dispatch;
 use core::convert::TryInto;
+use enum_dispatch::enum_dispatch;
 
 #[enum_dispatch]
 trait Trait1 {
@@ -7,15 +7,21 @@ trait Trait1 {
 }
 
 impl Trait1 for A {
-    fn describe(&self) -> char { 'A' }
+    fn describe(&self) -> char {
+        'A'
+    }
 }
 
 impl Trait1 for B {
-    fn describe(&self) -> char { 'B' }
+    fn describe(&self) -> char {
+        'B'
+    }
 }
 
 impl Trait1 for C {
-    fn describe(&self) -> char { 'C' }
+    fn describe(&self) -> char {
+        'C'
+    }
 }
 
 #[enum_dispatch]
@@ -24,15 +30,21 @@ trait Trait2 {
 }
 
 impl Trait2 for A {
-    fn as_string(&self) -> String { "A".to_string() }
+    fn as_string(&self) -> String {
+        "A".to_string()
+    }
 }
 
 impl Trait2 for B {
-    fn as_string(&self) -> String { " B ".to_string() }
+    fn as_string(&self) -> String {
+        " B ".to_string()
+    }
 }
 
 impl Trait2 for C {
-    fn as_string(&self) -> String { self.describe().to_string() }
+    fn as_string(&self) -> String {
+        self.describe().to_string()
+    }
 }
 
 pub struct A;
