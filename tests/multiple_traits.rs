@@ -59,6 +59,13 @@ pub enum Traited {
     C,
 }
 
+#[enum_dispatch(Trait1, Trait2)]
+pub enum TraitedSingleLine {
+    A,
+    B,
+    C,
+}
+
 #[test]
 fn main() {
     let a = Traited::from(A);
@@ -79,4 +86,26 @@ fn main() {
 
     let a_from_a: Result<A, _> = a.try_into();
     assert!(a_from_a.is_ok());
+
+    let a_sl = TraitedSingleLine::from(A);
+    let b_sl = TraitedSingleLine::from(B);
+    let c_sl = TraitedSingleLine::from(C);
+
+    assert_eq!(a_sl.describe(), 'A');
+    assert_eq!(b_sl.describe(), 'B');
+    assert_eq!(c_sl.describe(), 'C');
+
+    assert_eq!(a_sl.as_string(), "A".to_string());
+    assert_eq!(b_sl.as_string(), " B ".to_string());
+    assert_eq!(c_sl.as_string(), "C".to_string());
+
+    let b_from_c_sl: Result<B, _> = c_sl.try_into();
+    assert!(b_from_c_sl.is_err());
+    assert_eq!(
+        b_from_c_sl.err().unwrap(),
+        "Tried to convert variant C to B"
+    );
+
+    let a_from_a_sl: Result<A, _> = a_sl.try_into();
+    assert!(a_from_a_sl.is_ok());
 }
