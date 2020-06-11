@@ -7,7 +7,6 @@
 //! statically. Unfortunately, doing so strips any related `Span` information, preventing error
 //! messages from being as informative as they could be. For now, it seems this is the best option
 //! available.
-use proc_macro::Ident;
 use quote::ToTokens;
 
 use once_cell::sync::Lazy;
@@ -51,8 +50,7 @@ pub fn cache_enum_conversion_impls_defined(item: syn::Ident) {
 }
 
 /// Cache a "link" to be fulfilled once the needed definition is also cached.
-pub fn defer_link(needed: &Ident, cached: &::proc_macro2::Ident) {
-    // cached is a proc_macro2::Ident until there is a good way to convert into proc_macro::Ident.
+pub fn defer_link(needed: &::proc_macro2::Ident, cached: &::proc_macro2::Ident) {
     let (needed, cached) = (needed.to_string(), cached.to_string());
     let mut deferred_links = DEFERRED_LINKS.lock().unwrap();
     if deferred_links.contains_key(&needed) {

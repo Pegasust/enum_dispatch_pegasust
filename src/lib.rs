@@ -319,7 +319,7 @@
 
 extern crate proc_macro;
 
-use proc_macro::{TokenStream, TokenTree};
+use proc_macro::TokenStream;
 use quote::{ToTokens, TokenStreamExt};
 
 /// Used for converting a macro input into an ItemTrait or an EnumDispatchItem.
@@ -330,6 +330,8 @@ mod cache;
 mod enum_dispatch_item;
 /// Provides a custom syntax specification for the variants of enum dispatch syntax blocks.
 mod enum_dispatch_variant;
+/// Provides a custom syntax specification for the arguments to an `#[enum_dispatch(...)]` attribute.
+mod enum_dispatch_arg_list;
 /// Provides utilities for building enum dispatch implementations.
 mod expansion;
 /// Convenience trait for token parsing.
@@ -367,45 +369,32 @@ pub fn enum_dispatch(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
     let mut expanded = proc_macro2::TokenStream::from(expanded);
-    // If the attributes are not empty, the new block should be "linked" to another definition.
-    // That definition may or may not be cached yet.
-    // If it's not cached yet, we will have to push the link into the cache and defer impl
-    // generation until the missing definition is encountered.
+    // If the attributes are non-empty, the new block should be "linked" to the listed definitions.
+    // Those definitions may or may not have been cached yet.
+    // If one is not cached yet, the link will be pushed into the cache, and impl generation will
+    // be deferred until the missing definition is encountered.
     // For now, we assume it is already cached.
     if !attr.is_empty() {
-        let attr = attr.into_iter().collect::<Vec<_>>();
-        let attr_names = attr
-            .chunks(2)
-            .map(|cnk| {
-                match cnk {
-                    [TokenTree::Ident(i), TokenTree::Punct(p)] if p.as_char() == ',' => Some(i),
-                    [TokenTree::Ident(i)] => Some(i),
-                    _ => None,
+        syn::parse::<enum_dispatch_arg_list::EnumDispatchArgList>(attr)
+            .expect("Could not parse arguments to `#[enum_dispatch(...)]`.")
+            .arg_list
+            .into_iter()
+            .for_each(|p| {
+                let attr_name = p.get_ident()
+                    .expect("Paths and generics in `#[enum_dispatch(...)]` are not supported.");
+                match &new_block {
+                    attributed_parser::ParsedItem::Trait(traitdef) => {
+                        cache::defer_link(attr_name, &traitdef.ident)
+                    }
+                    attributed_parser::ParsedItem::EnumDispatch(enumdef) => {
+                        cache::defer_link(attr_name, &enumdef.ident)
+                    }
                 }
-                .ok_or_else(|| {
-                    syn::Error::new(
-                        proc_macro2::Span::call_site(),
-                        "The correct syntax is #[enum_dispatch(trait1, trait2, ...)]",
-                    )
-                })
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap();
-
-        for attr_name in attr_names.iter() {
-            match &new_block {
-                attributed_parser::ParsedItem::Trait(traitdef) => {
-                    cache::defer_link(&attr_name, &traitdef.ident)
-                }
-                attributed_parser::ParsedItem::EnumDispatch(enumdef) => {
-                    cache::defer_link(&attr_name, &enumdef.ident)
-                }
-            }
-        }
+            });
     };
-    // It would be much simpler to just always retrieve both definitions from the cache.
-    // However, span information is not stored in the cache. Saving the newly retrieved
-    // definition prevents *all* of the span information from being lost.
+    // It would be much simpler to just always retrieve all definitions from the cache. However,
+    // span information is not stored in the cache. Saving the newly retrieved definition prevents
+    // *all* of the span information from being lost.
     match new_block {
         attributed_parser::ParsedItem::Trait(traitdef) => {
             let additional_enums = cache::fulfilled_by_trait(&traitdef.ident);
