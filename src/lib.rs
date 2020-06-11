@@ -373,20 +373,33 @@ pub fn enum_dispatch(attr: TokenStream, item: TokenStream) -> TokenStream {
     // generation until the missing definition is encountered.
     // For now, we assume it is already cached.
     if !attr.is_empty() {
-        let mut attr = attr.into_iter();
-        let attr_name = match attr.next().unwrap() {
-            TokenTree::Ident(i) => i,
-            _ => panic!("Must specify an identifier for a trait"),
-        };
-        if attr.count() != 0 {
-            panic!("Too many arguments to enum_dispatch");
-        }
-        match &new_block {
-            attributed_parser::ParsedItem::Trait(traitdef) => {
-                cache::defer_link(&attr_name, &traitdef.ident)
-            }
-            attributed_parser::ParsedItem::EnumDispatch(enumdef) => {
-                cache::defer_link(&attr_name, &enumdef.ident)
+        let attr = attr.into_iter().collect::<Vec<_>>();
+        let attr_names = attr
+            .chunks(2)
+            .map(|cnk| {
+                match cnk {
+                    [TokenTree::Ident(i), TokenTree::Punct(p)] if p.as_char() == ',' => Some(i),
+                    [TokenTree::Ident(i)] => Some(i),
+                    _ => None,
+                }
+                .ok_or_else(|| {
+                    syn::Error::new(
+                        proc_macro2::Span::call_site(),
+                        "The correct syntax is #[enum_dispatch(trait1, trait2, ...)]",
+                    )
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        for attr_name in attr_names.iter() {
+            match &new_block {
+                attributed_parser::ParsedItem::Trait(traitdef) => {
+                    cache::defer_link(&attr_name, &traitdef.ident)
+                }
+                attributed_parser::ParsedItem::EnumDispatch(enumdef) => {
+                    cache::defer_link(&attr_name, &enumdef.ident)
+                }
             }
         }
     };
