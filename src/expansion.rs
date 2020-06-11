@@ -280,14 +280,18 @@ fn create_trait_match(
         syn::TraitItem::Method(trait_method) => {
             let match_expr = create_match_expr(&trait_method, trait_name, enum_name, enumvariants);
 
+            let mut impl_attrs = trait_method.attrs.clone();
+            // Inline impls - #[inline] is never already specified in a trait method signature
+            impl_attrs.push(syn::Attribute {
+                pound_token: Default::default(),
+                style: syn::AttrStyle::Outer,
+                bracket_token: Default::default(),
+                path: syn::parse_str("inline").unwrap(),
+                tokens: proc_macro::TokenStream::new().into(),
+            });
+
             syn::ImplItem::Method(syn::ImplItemMethod {
-                attrs: vec![syn::Attribute {
-                    pound_token: Default::default(),
-                    style: syn::AttrStyle::Outer,
-                    bracket_token: Default::default(),
-                    path: syn::parse_str("inline").unwrap(),
-                    tokens: proc_macro::TokenStream::new().into(),
-                }],
+                attrs: impl_attrs,
                 vis: syn::Visibility::Inherited,
                 defaultness: None,
                 sig: trait_method.sig,
