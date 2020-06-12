@@ -113,7 +113,7 @@ Check out [this generics example](tests/generics.rs) to see how that works.
 
 If you want to use `enum_dispatch` to implement the same trait for multiple enums, you may specify them all in the same attribute:
 
-```
+```rust
 #[enum_dispatch(Widgets, Tools, Gadgets)]
 trait CommonFunctionality {
     // ...
@@ -124,7 +124,7 @@ trait CommonFunctionality {
 
 Similarly to above, you may use a single attribute to implement multiple traits for a single enum:
 
-```
+```rust
 #[enum_dispatch(CommonFunctionality, WidgetFunctionality)]
 enum Widget {
     // ...
