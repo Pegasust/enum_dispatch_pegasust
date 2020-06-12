@@ -70,17 +70,26 @@ test benches::enumdispatch_homogeneous_vec ... bench:     479,630 ns/iter (+/- 3
 
 ## bonus features
 
+### serialization compatibility
+
 While `enum_dispatch` was built with performance in mind, the transformations it applies make all your data structures much more visible to the compiler.
 That means you can use [`serde`](https://crates.io/crates/serde) or other similar tools on your trait objects!
+
+### automatic `From` and `TryInto` implementations
 
 `enum_dispatch` will generate a `From` implementation for all inner types to make it easy to instantiate your custom enum.
 In addition, it will generate a `TryInto` implementation for all inner types to make it easy to convert back into the original, unwrapped types.
 
-`enum_dispatch` is also supported in `no_std` environments.
+### `no_std` support
 
-## custom variant names
+`enum_dispatch` is supported in `no_std` environments.
+It's a great fit for embedded devices, where it's super useful to be able to allocate collections of trait objects on the stack.
 
-By default, `enum_dispatch` will expand each enum variants into one with a single unnamed field of the same name as the internal type.
+## tweaks and options
+
+### custom variant names
+
+By default, `enum_dispatch` will expand each enum variant into one with a single unnamed field of the same name as the internal type.
 If for some reason you'd like to use a custom name for a particular type in an `enum_dispatch` variant, you can do so as shown below:
 
 ```rust
@@ -99,6 +108,28 @@ match mt {
 
 Custom variant names are required for enums and traits with generic type arguments, which can also be optimized by `enum_dispatch`.
 Check out [this generics example](tests/generics.rs) to see how that works.
+
+### specify multiple enums at once
+
+If you want to use `enum_dispatch` to implement the same trait for multiple enums, you may specify them all in the same attribute:
+
+```
+#[enum_dispatch(Widgets, Tools, Gadgets)]
+trait CommonFunctionality {
+    // ...
+}
+```
+
+### specify multiple traits at once
+
+Similarly to above, you may use a single attribute to implement multiple traits for a single enum:
+
+```
+#[enum_dispatch(CommonFunctionality, WidgetFunctionality)]
+enum Widget {
+    // ...
+}
+```
 
 ## troubleshooting
 
