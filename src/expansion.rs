@@ -71,6 +71,12 @@ pub fn add_enum_impls(
     impls
 }
 
+/// Returns whether or not an attribute from an enum variant should be applied to other usages of
+/// that variant's identifier.
+fn use_attribute(attr: &&syn::Attribute) -> bool {
+    attr.path.is_ident("cfg")
+}
+
 /// Generates impls of core::convert::From for each enum variant.
 fn generate_from_impls(
     enumname: &syn::Ident,
@@ -83,7 +89,9 @@ fn generate_from_impls(
         .map(|variant| {
             let variant_name = &variant.ident;
             let variant_type = &variant.ty;
+            let attributes = &variant.attrs.iter().filter(use_attribute).collect::<Vec<_>>();
             let impl_block = quote! {
+                #(#attributes)*
                 impl #impl_generics ::core::convert::From<#variant_type> for #enumname #ty_generics #where_clause {
                     fn from(v: #variant_type) -> #enumname #ty_generics {
                         #enumname::#variant_name(v)
@@ -107,6 +115,7 @@ fn generate_try_into_impls(
         .map(|(i, variant)| {
             let variant_name = &variant.ident;
             let variant_type = &variant.ty;
+            let attributes = &variant.attrs.iter().filter(use_attribute).collect::<Vec<_>>();
 
             // Instead of making a specific match arm for each of the other variants we could just
             // use a catch-all wildcard, but doing it this way means we get nicer error messages
@@ -116,18 +125,28 @@ fn generate_try_into_impls(
                 .iter()
                 .enumerate()
                 .filter_map(
-                    |(j, other)| if i != j { Some(&other.ident) } else { None });
-            let from_str = other.clone().map(|ident| ident.to_string());
+                    |(j, other)| if i != j { Some(other) } else { None });
+            let other_attributes = other
+                .clone()
+                .map(|other| {
+                    let attrs = other.attrs.iter().filter(use_attribute);
+                    quote! { #(#attrs)* }
+                });
+            let other_idents = other
+                .map(|other| other.ident.clone());
+            let from_str = other_idents.clone().map(|ident| ident.to_string());
             let to_str = core::iter::repeat(variant_name.to_string());
             let repeated = core::iter::repeat(&enumname);
 
             let impl_block = quote! {
+                #(#attributes)*
                 impl #impl_generics core::convert::TryInto<#variant_type> for #enumname #ty_generics #where_clause {
                     type Error = &'static str;
                     fn try_into(self) -> ::core::result::Result<#variant_type, Self::Error> {
                         match self {
                             #enumname::#variant_name(v) => {Ok(v)},
-                            #(  #repeated::#other(v) => {
+                            #(  #other_attributes
+                                #repeated::#other_idents(v) => {
                                 Err(concat!("Tried to convert variant ",
                                             #from_str, " to ", #to_str))}    ),*
                         }
