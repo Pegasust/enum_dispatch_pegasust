@@ -10,7 +10,9 @@ enum App {
 }
 
 #[enum_dispatch]
-trait Application {}
+trait Application {
+    fn run(self) -> usize;
+}
 
 struct Menu;
 #[cfg(test)]
@@ -18,32 +20,41 @@ struct DebugClock;
 #[cfg(not(test))]
 struct Clock;
 
-impl Application for Menu {}
+impl Application for Menu {
+    fn run(self) -> usize { 0 }
+}
 
 #[cfg(test)]
-impl Application for DebugClock {}
+impl Application for DebugClock {
+    fn run(self) -> usize { 1 }
+}
 
 #[cfg(not(test))]
-impl Application for Clock {}
+impl Application for Clock {
+    fn run(self) -> usize { 2 }
+}
 
 fn main() {
     use std::convert::TryInto;
 
     let menu = Menu;
     let app: App = menu.into();
-    let _menu: Menu = app.try_into().unwrap();
+    let menu: Menu = app.try_into().unwrap();
+    assert_eq!(menu.run(), 0);
 
     #[cfg(test)]
     {
         let clock = DebugClock;
         let app: App = clock.into();
-        let _clock: DebugClock = app.try_into().unwrap();
+        let clock: DebugClock = app.try_into().unwrap();
+        assert_eq!(clock.run(), 1);
     }
 
     #[cfg(not(test))]
     {
         let clock = Clock;
         let app: App = clock.into();
-        let _clock: Clock = app.try_into().unwrap();
+        let clock: Clock = app.try_into().unwrap();
+        assert_eq!(clock.run(), 2);
     }
 }

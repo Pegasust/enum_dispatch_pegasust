@@ -261,8 +261,9 @@ fn create_match_expr(
         .iter()
         .map(|variant| {
             let variant_name = &variant.ident;
+            let attrs = variant.attrs.iter().filter(use_attribute).cloned().collect::<Vec<_>>();
             syn::Arm {
-                attrs: vec![],
+                attrs,
                 pat: {
                     let fieldname = syn::Ident::new(FIELDNAME, variant.span());
                     syn::parse_quote! {#enum_name::#variant_name(#fieldname)}
