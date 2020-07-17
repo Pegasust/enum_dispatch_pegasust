@@ -1,5 +1,6 @@
 # enum_dispatch
 
+[![crates.io](https://img.shields.io/crates/v/enum_dispatch.svg)](https://crates.io/crates/enum_dispatch)
 [![Docs](https://docs.rs/enum_dispatch/badge.svg)](https://docs.rs/enum_dispatch/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
 
