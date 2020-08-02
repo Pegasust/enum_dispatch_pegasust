@@ -51,7 +51,7 @@ Notice the differences:
 
 ## how to use
 
-0. Add `enum_dispatch` as a Cargo.toml dependency, and import `enum_dispatch::enum_dispatch` to your code.
+0. Add `enum_dispatch` as a Cargo.toml dependency, and `use enum_dispatch::enum_dispatch` in your code.
 1. Create a new enum whose variants are any in-scope trait implementors you've defined.
 2. Add an `#[enum_dispatch]` attribute to either the enum or trait definition. This will "register" it with the `enum_dispatch` library. Take note of the name of the enum or trait it was applied to -- we'll call it `FirstBlockName`.
 3. Add an `#[enum_dispatch(FirstBlockName)]` attribute to the remaining definition. This will "link" it with the previously registered definition.
@@ -80,6 +80,11 @@ That means you can use [`serde`](https://crates.io/crates/serde) or other simila
 
 `enum_dispatch` will generate a `From` implementation for all inner types to make it easy to instantiate your custom enum.
 In addition, it will generate a `TryInto` implementation for all inner types to make it easy to convert back into the original, unwrapped types.
+
+### attribute support
+
+You can use use `#[cfg(...)]` attributes on `enum_dispatch` variants to conditionally include or exclude their corresponding `enum_dispatch` implementations.
+Other attributes will be passed straight through to the underlying generated enum, allowing compatibility with other procedural macros.
 
 ### `no_std` support
 
