@@ -238,7 +238,9 @@ fn create_trait_fn_call(
                 );
             } else {
                 let trait_method_name = &trait_method.sig.ident;
-                Box::new(syn::parse_quote! { #trait_name::#trait_method_name })
+                let ty_generics = trait_method.sig.generics.split_for_impl().1;
+                let turbofish = ty_generics.as_turbofish();
+                Box::new(syn::parse_quote! { #trait_name::#trait_method_name #turbofish })
             }
         },
         paren_token: Default::default(),
