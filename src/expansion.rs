@@ -22,16 +22,13 @@ pub fn add_enum_impls(
     let traitname = traitdef.ident;
     let traitfns = traitdef.items;
 
-    let generics = if traitdef.generics.lt_token.is_some() {
-        &traitdef.generics
-    } else {
-        &enum_def.generics
-    };
-    let (_, enum_ty, _) = &traitdef.generics.split_for_impl();
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let (generic_impl_constraints, enum_type_generics, where_clause) =
+        enum_def.generics.split_for_impl();
+    let (_, trait_type_generics, _) = traitdef.generics.split_for_impl();
+
     let enumname = &enum_def.ident.to_owned();
     let trait_impl = quote! {
-        impl #impl_generics #traitname #enum_ty for #enumname #ty_generics #where_clause {
+        impl #generic_impl_constraints #traitname #trait_type_generics for #enumname #enum_type_generics #where_clause {
 
         }
     };
@@ -44,6 +41,7 @@ pub fn add_enum_impls(
     for trait_fn in traitfns {
         trait_impl.items.push(create_trait_match(
             trait_fn,
+            &trait_type_generics,
             &traitname,
             &enum_def.ident,
             &variants,
@@ -54,7 +52,7 @@ pub fn add_enum_impls(
 
     // Only generate From impls once per enum_def
     if !cache::conversion_impls_def_by_enum(&enum_def.ident) {
-        let from_impls = generate_from_impls(&enum_def.ident, &variants, &generics);
+        let from_impls = generate_from_impls(&enum_def.ident, &variants, &enum_def.generics);
         for from_impl in from_impls.iter() {
             from_impl.to_tokens(&mut impls);
         }
@@ -214,6 +212,7 @@ fn extract_fn_args(
 /// implementations.
 fn create_trait_fn_call(
     trait_method: &syn::TraitItemMethod,
+    trait_generics: &syn::TypeGenerics,
     trait_name: &syn::Ident,
 ) -> syn::ExprCall {
     let trait_args = trait_method.to_owned().sig.inputs;
@@ -237,10 +236,15 @@ fn create_trait_fn_call(
                     "Static methods cannot be enum_dispatched (no self argument to match on)"
                 );
             } else {
-                let trait_method_name = &trait_method.sig.ident;
-                let ty_generics = trait_method.sig.generics.split_for_impl().1;
-                let turbofish = ty_generics.as_turbofish();
-                Box::new(syn::parse_quote! { #trait_name::#trait_method_name #turbofish })
+                let method_name = &trait_method.sig.ident;
+                let trait_turbofish = trait_generics.as_turbofish();
+
+                let method_type_generics = trait_method.sig.generics.split_for_impl().1;
+                let method_turbofish = method_type_generics.as_turbofish();
+
+                Box::new(
+                    syn::parse_quote! { #trait_name#trait_turbofish::#method_name#method_turbofish },
+                )
             }
         },
         paren_token: Default::default(),
@@ -252,18 +256,24 @@ fn create_trait_fn_call(
 /// binding to their single field and calling the provided trait method on each.
 fn create_match_expr(
     trait_method: &syn::TraitItemMethod,
+    trait_generics: &syn::TypeGenerics,
     trait_name: &syn::Ident,
     enum_name: &syn::Ident,
     enumvariants: &[&EnumDispatchVariant],
 ) -> syn::Expr {
-    let trait_fn_call = create_trait_fn_call(trait_method, trait_name);
+    let trait_fn_call = create_trait_fn_call(trait_method, trait_generics, trait_name);
 
     // Creates a Vec containing a match arm for every enum variant
     let match_arms = enumvariants
         .iter()
         .map(|variant| {
             let variant_name = &variant.ident;
-            let attrs = variant.attrs.iter().filter(use_attribute).cloned().collect::<Vec<_>>();
+            let attrs = variant
+                .attrs
+                .iter()
+                .filter(use_attribute)
+                .cloned()
+                .collect::<Vec<_>>();
             syn::Arm {
                 attrs,
                 pat: {
@@ -294,13 +304,20 @@ fn create_match_expr(
 /// Builds an implementation of the given trait function for the given enum type.
 fn create_trait_match(
     trait_item: syn::TraitItem,
+    trait_generics: &syn::TypeGenerics,
     trait_name: &syn::Ident,
     enum_name: &syn::Ident,
     enumvariants: &[&EnumDispatchVariant],
 ) -> syn::ImplItem {
     match trait_item {
         syn::TraitItem::Method(trait_method) => {
-            let match_expr = create_match_expr(&trait_method, trait_name, enum_name, enumvariants);
+            let match_expr = create_match_expr(
+                &trait_method,
+                trait_generics,
+                trait_name,
+                enum_name,
+                enumvariants,
+            );
 
             let mut impl_attrs = trait_method.attrs.clone();
             // Inline impls - #[inline] is never already specified in a trait method signature

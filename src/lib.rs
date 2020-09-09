@@ -380,8 +380,34 @@ pub fn enum_dispatch(attr: TokenStream, item: TokenStream) -> TokenStream {
             .arg_list
             .into_iter()
             .for_each(|p| {
-                let attr_name = p.get_ident()
-                    .expect("Paths and generics in `#[enum_dispatch(...)]` are not supported.");
+                if p.leading_colon.is_some() || p.segments.len() != 1 {
+                    panic!("Paths in `#[enum_dispatch(...)]` are not supported.");
+                }
+                let syn::PathSegment {
+                    ident: attr_name,
+                    arguments: attr_generics
+                } = p.segments.last().unwrap();
+                match attr_generics.clone() {
+                    syn::PathArguments::None => (),
+                    syn::PathArguments::AngleBracketed(args) => {
+                        assert!(args.colon2_token.is_none());
+                        args.args.iter().for_each(|generic_arg| {
+                            match generic_arg {
+                                syn::GenericArgument::Type(syn::Type::Path(t)) if t.qself.is_none() => {
+                                    t.path.get_ident().expect("Generic binding paths in #[enum_dispatch(...)] are not supported");
+                                },
+                                // Inferred bindings could appear in attributes over trait items.
+                                syn::GenericArgument::Type(syn::Type::Infer(_)) => (),
+                                syn::GenericArgument::Type(_) => panic!("Generics in #[enum_dispatch(...)] must be identifiers"),
+                                syn::GenericArgument::Lifetime(_) => panic!("Lifetime generics in #[enum_dispatch(...)] are not supported"),
+                                syn::GenericArgument::Binding(_) => panic!("Generic equality constraints in #[enum_dispatch(...)] are not supported"),
+                                syn::GenericArgument::Constraint(_) => panic!("Generic trait constraints in #[enum_dispatch(...)] are not supported"),
+                                syn::GenericArgument::Const(_) => panic!("Const expression generics in #[enum_dispatch(...)] are not supported"),
+                            }
+                        });
+                    }
+                    syn::PathArguments::Parenthesized(_) => panic!("Expected angle bracketed generic arguments, found parenthesized arguments"),
+                }
                 match &new_block {
                     attributed_parser::ParsedItem::Trait(traitdef) => {
                         cache::defer_link(attr_name, &traitdef.ident)
