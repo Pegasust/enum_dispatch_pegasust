@@ -387,33 +387,30 @@ pub fn enum_dispatch(attr: TokenStream, item: TokenStream) -> TokenStream {
                     ident: attr_name,
                     arguments: attr_generics
                 } = p.segments.last().unwrap();
-                match attr_generics.clone() {
-                    syn::PathArguments::None => (),
+                let attr_generics = match attr_generics.clone() {
+                    syn::PathArguments::None => vec![],
                     syn::PathArguments::AngleBracketed(args) => {
                         assert!(args.colon2_token.is_none());
-                        args.args.iter().for_each(|generic_arg| {
+                        args.args.iter().map(|generic_arg| {
                             match generic_arg {
-                                syn::GenericArgument::Type(syn::Type::Path(t)) if t.qself.is_none() => {
-                                    t.path.get_ident().expect("Generic binding paths in #[enum_dispatch(...)] are not supported");
-                                },
-                                // Inferred bindings could appear in attributes over trait items.
-                                syn::GenericArgument::Type(syn::Type::Infer(_)) => (),
+                                syn::GenericArgument::Type(syn::Type::Path(t)) if t.qself.is_none() => Some(t.path.get_ident().expect("Generic binding paths in #[enum_dispatch(...)] are not supported").clone()),
+                                syn::GenericArgument::Type(syn::Type::Infer(_)) => None,
                                 syn::GenericArgument::Type(_) => panic!("Generics in #[enum_dispatch(...)] must be identifiers"),
                                 syn::GenericArgument::Lifetime(_) => panic!("Lifetime generics in #[enum_dispatch(...)] are not supported"),
                                 syn::GenericArgument::Binding(_) => panic!("Generic equality constraints in #[enum_dispatch(...)] are not supported"),
                                 syn::GenericArgument::Constraint(_) => panic!("Generic trait constraints in #[enum_dispatch(...)] are not supported"),
                                 syn::GenericArgument::Const(_) => panic!("Const expression generics in #[enum_dispatch(...)] are not supported"),
                             }
-                        });
+                        }).collect::<Vec<_>>()
                     }
                     syn::PathArguments::Parenthesized(_) => panic!("Expected angle bracketed generic arguments, found parenthesized arguments"),
-                }
+                };
                 match &new_block {
                     attributed_parser::ParsedItem::Trait(traitdef) => {
-                        cache::defer_link(attr_name, &traitdef.ident)
+                        cache::defer_link((attr_name, attr_generics.len()), (&traitdef.ident, traitdef.generics.type_params().count()))
                     }
                     attributed_parser::ParsedItem::EnumDispatch(enumdef) => {
-                        cache::defer_link(attr_name, &enumdef.ident)
+                        cache::defer_link((attr_name, attr_generics.len()), (&enumdef.ident, enumdef.generics.type_params().count()))
                     }
                 }
             });
@@ -423,13 +420,15 @@ pub fn enum_dispatch(attr: TokenStream, item: TokenStream) -> TokenStream {
     // *all* of the span information from being lost.
     match new_block {
         attributed_parser::ParsedItem::Trait(traitdef) => {
-            let additional_enums = cache::fulfilled_by_trait(&traitdef.ident);
+            let additional_enums =
+                cache::fulfilled_by_trait(&traitdef.ident, traitdef.generics.type_params().count());
             for enumdef in additional_enums {
                 expanded.append_all(add_enum_impls(enumdef, traitdef.clone()));
             }
         }
         attributed_parser::ParsedItem::EnumDispatch(enumdef) => {
-            let additional_traits = cache::fulfilled_by_enum(&enumdef.ident);
+            let additional_traits =
+                cache::fulfilled_by_enum(&enumdef.ident, enumdef.generics.type_params().count());
             for traitdef in additional_traits {
                 expanded.append_all(add_enum_impls(enumdef.clone(), traitdef));
             }

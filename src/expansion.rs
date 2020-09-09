@@ -51,7 +51,10 @@ pub fn add_enum_impls(
     let mut impls = proc_macro2::TokenStream::new();
 
     // Only generate From impls once per enum_def
-    if !cache::conversion_impls_def_by_enum(&enum_def.ident) {
+    if !cache::conversion_impls_def_by_enum(
+        &enum_def.ident,
+        enum_def.generics.type_params().count(),
+    ) {
         let from_impls = generate_from_impls(&enum_def.ident, &variants, &enum_def.generics);
         for from_impl in from_impls.iter() {
             from_impl.to_tokens(&mut impls);
@@ -62,7 +65,10 @@ pub fn add_enum_impls(
         for try_into_impl in try_into_impls.iter() {
             try_into_impl.to_tokens(&mut impls);
         }
-        cache::cache_enum_conversion_impls_defined(enum_def.ident.clone());
+        cache::cache_enum_conversion_impls_defined(
+            enum_def.ident.clone(),
+            enum_def.generics.type_params().count(),
+        );
     }
 
     trait_impl.to_tokens(&mut impls);
