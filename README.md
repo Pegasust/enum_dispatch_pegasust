@@ -137,6 +137,23 @@ enum Widget {
 }
 ```
 
+### generic enums and traits
+
+`enum_dispatch` can operate on enums and traits with generic parameters.
+When linking these, be sure to include the generic parameters in the attribute argument, like below:
+
+```
+#[enum_dispatch]
+trait Foo<T, U> { /* ... */ }
+
+#[enum_dispatch(Foo<T, U>)]
+enum Bar<T: Clone, U: Hash> { /* ... */ }
+```
+
+The names of corresponding generic parameters should match between the definition of the enum and trait.
+
+[This example](tests/complex_generics.rs) demonstrates this in more detail.
+
 ## troubleshooting
 
 ### no impls created?
