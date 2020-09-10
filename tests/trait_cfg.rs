@@ -10,18 +10,25 @@ trait TestTrait {
 
 impl TestTrait for A {
     #[cfg(test)]
-    fn test_method(&self) -> char { 'a' }
+    fn test_method(&self) -> char {
+        'a'
+    }
     #[cfg(not(test))]
-    fn release_method(&self) -> char { 'A' }
+    fn release_method(&self) -> char {
+        'A'
+    }
 }
 
 impl TestTrait for B {
     #[cfg(test)]
-    fn test_method(&self) -> char { 'b' }
+    fn test_method(&self) -> char {
+        'b'
+    }
     #[cfg(not(test))]
-    fn release_method(&self) -> char { 'B' }
+    fn release_method(&self) -> char {
+        'B'
+    }
 }
-
 
 pub struct A;
 pub struct B;

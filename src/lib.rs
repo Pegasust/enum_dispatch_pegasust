@@ -326,12 +326,12 @@ use quote::{ToTokens, TokenStreamExt};
 mod attributed_parser;
 /// Provides local storage for enum and trait definitions so that they can be accessed later.
 mod cache;
+/// Provides a custom syntax specification for the arguments to an `#[enum_dispatch(...)]` attribute.
+mod enum_dispatch_arg_list;
 /// Provides a custom syntax specification for enum dispatch syntax blocks.
 mod enum_dispatch_item;
 /// Provides a custom syntax specification for the variants of enum dispatch syntax blocks.
 mod enum_dispatch_variant;
-/// Provides a custom syntax specification for the arguments to an `#[enum_dispatch(...)]` attribute.
-mod enum_dispatch_arg_list;
 /// Provides utilities for building enum dispatch implementations.
 mod expansion;
 /// Convenience trait for token parsing.

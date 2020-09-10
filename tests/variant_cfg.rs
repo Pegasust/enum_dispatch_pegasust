@@ -21,17 +21,23 @@ struct DebugClock;
 struct Clock;
 
 impl Application for Menu {
-    fn run(self) -> usize { 0 }
+    fn run(self) -> usize {
+        0
+    }
 }
 
 #[cfg(test)]
 impl Application for DebugClock {
-    fn run(self) -> usize { 1 }
+    fn run(self) -> usize {
+        1
+    }
 }
 
 #[cfg(not(test))]
 impl Application for Clock {
-    fn run(self) -> usize { 2 }
+    fn run(self) -> usize {
+        2
+    }
 }
 
 #[test]

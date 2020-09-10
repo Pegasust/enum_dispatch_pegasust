@@ -19,13 +19,18 @@ impl Constants for Five {
 
 #[enum_dispatch(AnyMath)]
 trait Math {
-    fn get_number<C: ?Sized>(&self) -> u32 where C: Constants;
+    fn get_number<C: ?Sized>(&self) -> u32
+    where
+        C: Constants;
 }
 
 struct Adder(pub u32);
 
 impl Math for Adder {
-    fn get_number<C: ?Sized>(&self) -> u32 where C: Constants {
+    fn get_number<C: ?Sized>(&self) -> u32
+    where
+        C: Constants,
+    {
         self.0 + C::EXAMPLE
     }
 }
@@ -35,7 +40,10 @@ struct MultiplierWith<C2: Constants + ?Sized> {
 }
 
 impl<C2: Constants + ?Sized> Math for MultiplierWith<C2> {
-    fn get_number<C: ?Sized>(&self) -> u32 where C: Constants {
+    fn get_number<C: ?Sized>(&self) -> u32
+    where
+        C: Constants,
+    {
         C2::EXAMPLE * C::EXAMPLE
     }
 }
@@ -49,7 +57,10 @@ enum AnyMath {
 #[test]
 fn main() {
     let two_adder: AnyMath = Adder(2).into();
-    let five_multiplier: AnyMath = MultiplierWith::<Five> { _phantom: PhantomData }.into();
+    let five_multiplier: AnyMath = MultiplierWith::<Five> {
+        _phantom: PhantomData,
+    }
+    .into();
     assert_eq!(two_adder.get_number::<Zero>(), 2);
     assert_eq!(two_adder.get_number::<Five>(), 7);
     assert_eq!(five_multiplier.get_number::<Zero>(), 0);
