@@ -48,3 +48,14 @@ pub enum AnyFaz<'a> {
     SuperFaz(SuperFaz<'a>),
     UltraFaz(UltraFaz),
 }
+
+#[test]
+fn main() {
+    use core::convert::TryInto;
+
+    let anyfaz: AnyFaz = SuperFaz(PhantomData::<&u8>::default()).into();
+
+    let superfaz: Result<SuperFaz, _> = anyfaz.try_into();
+
+    assert!(superfaz.is_ok());
+}

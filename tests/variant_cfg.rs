@@ -34,6 +34,7 @@ impl Application for Clock {
     fn run(self) -> usize { 2 }
 }
 
+#[test]
 fn main() {
     use std::convert::TryInto;
 
