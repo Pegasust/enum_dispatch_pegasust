@@ -142,7 +142,7 @@ enum Widget {
 `enum_dispatch` can operate on enums and traits with generic parameters.
 When linking these, be sure to include the generic parameters in the attribute argument, like below:
 
-```
+```rust
 #[enum_dispatch]
 trait Foo<T, U> { /* ... */ }
 
