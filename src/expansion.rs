@@ -146,7 +146,7 @@ fn generate_try_into_impls(
                 #(#attributes)*
                 impl #impl_generics core::convert::TryInto<#variant_type> for #enumname #ty_generics #where_clause {
                     type Error = &'static str;
-                    fn try_into(self) -> ::core::result::Result<#variant_type, Self::Error> {
+                    fn try_into(self) -> ::core::result::Result<#variant_type, <Self as core::convert::TryInto<#variant_type>>::Error> {
                         match self {
                             #enumname::#variant_name(v) => {Ok(v)},
                             #(  #other_attributes
