@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+
+- Support enum variants named `Error` (#36)
+
 ## 0.3.3
 
 ### Compatibility warning
