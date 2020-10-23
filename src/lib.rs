@@ -11,6 +11,12 @@
 //! make it easier to keep track of instances of dynamic dispatch, but it's not always easy to
 //! avoid it entirely.
 //!
+//! # Feature documentation
+//!
+//! For full documentation of features like generic support, custom variant names, and more, please
+//! check the repository's
+//! [README](https://gitlab.com/antonok/enum_dispatch/-/blob/master/README.md).
+//!
 //! # How it works
 //!
 //! Observe the following example of code describing a user interface with knobs. Each knob can
