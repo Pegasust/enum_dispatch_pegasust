@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.5
+
+- Compatibility with `syn >= 1.0.58` (#37, !21)
+
 ## 0.3.4
 
 - Support enum variants named `Error` (#36)
