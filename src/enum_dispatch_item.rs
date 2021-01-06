@@ -53,7 +53,7 @@ impl syn::parse::Parse for EnumDispatchItem {
 }
 
 /// Allows `EnumDispatchItem`s to be converted into `TokenStream`s.
-impl syn::export::quote::ToTokens for EnumDispatchItem {
+impl quote::ToTokens for EnumDispatchItem {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         tokens.append_all(self.attrs.outer());
         self.vis.to_tokens(tokens);

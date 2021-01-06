@@ -300,7 +300,7 @@ fn create_match_expr(
         match_token: Default::default(),
         expr: Box::new(plain_identifier_expr(syn::Ident::new(
             "self",
-            syn::export::Span::call_site(),
+            proc_macro2::Span::call_site(),
         ))),
         brace_token: Default::default(),
         arms: match_arms,

@@ -44,7 +44,7 @@ impl syn::parse::Parse for EnumDispatchVariant {
 }
 
 /// Allows `EnumDispatchVariant`s to be converted into `TokenStream`s.
-impl syn::export::quote::ToTokens for EnumDispatchVariant {
+impl quote::ToTokens for EnumDispatchVariant {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         tokens.append_all(self.attrs.outer());
         self.ident.to_tokens(tokens);
