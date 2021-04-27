@@ -199,7 +199,8 @@ fn extract_fn_args(
                 if let syn::Pat::Ident(syn::PatIdent { ident, .. }) = &**pat {
                     Some(ident.to_owned())
                 } else {
-                    panic!("Unsupported argument type")
+                    // All non-ident fn args are replaced in `identify_signature_arguments`.
+                    unreachable!()
                 }
             }
         })
@@ -316,7 +317,9 @@ fn create_trait_match(
     enumvariants: &[&EnumDispatchVariant],
 ) -> syn::ImplItem {
     match trait_item {
-        syn::TraitItem::Method(trait_method) => {
+        syn::TraitItem::Method(mut trait_method) => {
+            identify_signature_arguments(&mut trait_method.sig);
+
             let match_expr = create_match_expr(
                 &trait_method,
                 trait_generics,
@@ -348,4 +351,60 @@ fn create_trait_match(
         }
         _ => panic!("Unsupported trait item"),
     }
+}
+
+/// All method arguments that appear in trait method signatures must be passed through to the
+/// underlying dispatched method calls, so they must have unique identifiers. That means we need to
+/// give names to wildcard arguments (`_`), tuple-style arguments, and a bunch of other argument
+/// types you never knew were valid Rust syntax.
+///
+/// Since there is no way to generate hygienic identifiers, we just use a special underscored
+/// string followed by an incrementing counter. We do this for *every* argument, including ones
+/// that are already named, in case somebody clever decides to name their arguments similarly.
+fn identify_signature_arguments(sig: &mut syn::Signature) {
+    let mut arg_counter = 0;
+
+    /// Generates a new argument identifier named `__enum_dispatch_arg_` followed by an
+    /// incrementing counter.
+    fn new_arg_ident(span: proc_macro2::Span, arg_counter: &mut usize) -> syn::Ident {
+        let ident = proc_macro2::Ident::new(&format!("__enum_dispatch_arg_{}", arg_counter), span);
+        *arg_counter += 1;
+        ident
+    }
+
+    sig.inputs.iter_mut().for_each(|arg| match arg {
+        syn::FnArg::Typed(ref mut pat_type) => {
+            let span = pat_type.span();
+            *pat_type.pat = match &*pat_type.pat {
+                syn::Pat::Ident(ref pat_ident) => syn::Pat::Ident(syn::PatIdent {
+                    ident: new_arg_ident(pat_ident.span(), &mut arg_counter),
+                    ..pat_ident.clone()
+                }),
+                // Some of these aren't valid Rust syntax, but why not support all of them anyways!
+                syn::Pat::Box(syn::PatBox { attrs, .. })
+                | syn::Pat::Lit(syn::PatLit { attrs, .. })
+                | syn::Pat::Macro(syn::PatMacro { attrs, .. })
+                | syn::Pat::Or(syn::PatOr { attrs, .. })
+                | syn::Pat::Path(syn::PatPath { attrs, .. })
+                | syn::Pat::Range(syn::PatRange { attrs, .. })
+                | syn::Pat::Reference(syn::PatReference { attrs, .. })
+                | syn::Pat::Rest(syn::PatRest { attrs, .. })
+                | syn::Pat::Slice(syn::PatSlice { attrs, .. })
+                | syn::Pat::Struct(syn::PatStruct { attrs, .. })
+                | syn::Pat::Tuple(syn::PatTuple { attrs, .. })
+                | syn::Pat::TupleStruct(syn::PatTupleStruct { attrs, .. })
+                | syn::Pat::Type(syn::PatType { attrs, .. })
+                | syn::Pat::Wild(syn::PatWild { attrs, .. }) => syn::Pat::Ident(syn::PatIdent {
+                    attrs: attrs.to_owned(),
+                    by_ref: None,
+                    mutability: None,
+                    ident: new_arg_ident(span, &mut arg_counter),
+                    subpat: None,
+                }),
+                _ => panic!("Unsupported argument type"),
+            }
+        }
+        // `self` arguments will never need to be renamed.
+        syn::FnArg::Receiver(..) => (),
+    });
 }
