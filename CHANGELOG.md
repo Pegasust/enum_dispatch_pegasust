@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.6
+
+- Remove `extra-traits` feature from `syn` dependency (!24)
+- Support trait methods with pattern arguments (#44)
+
 ## 0.3.5
 
 - Compatibility with `syn >= 1.0.58` (#37, !21)
