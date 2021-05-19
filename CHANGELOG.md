@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.7
+
+- Support trait methods with late bound lifetime arguments (#34)
+
 ## 0.3.6
 
 - Remove `extra-traits` feature from `syn` dependency (!24)
