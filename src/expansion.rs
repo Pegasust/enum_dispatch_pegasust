@@ -246,7 +246,20 @@ fn create_trait_fn_call(
                 let method_name = &trait_method.sig.ident;
                 let trait_turbofish = trait_generics.as_turbofish();
 
-                let method_type_generics = trait_method.sig.generics.split_for_impl().1;
+                // It's not allowed to specify late bound lifetime arguments for a function call.
+                // Theoretically, it should be possible to determine from a function signature
+                // whether or not it has late bound lifetime arguments. In practice, it's very
+                // difficult, requiring recursive visitors over all the types in the signature and
+                // inference for elided lifetimes.
+                //
+                // Instead, it appears to be safe to strip out any lifetime arguments altogether.
+                let mut generics_without_lifetimes = trait_method.sig.generics.clone();
+                generics_without_lifetimes.params = generics_without_lifetimes
+                    .params
+                    .into_iter()
+                    .filter(|param| !matches!(param, syn::GenericParam::Lifetime(..)))
+                    .collect();
+                let method_type_generics = generics_without_lifetimes.split_for_impl().1;
                 let method_turbofish = method_type_generics.as_turbofish();
 
                 Box::new(
