@@ -364,6 +364,10 @@ pub fn enum_dispatch(attr: proc_macro::TokenStream, item: proc_macro::TokenStrea
     enum_dispatch2(attr.into(), item.into()).into()
 }
 
+/// `proc_macro2::TokenStream` compatible version of the `enum_dispatch` function.
+///
+/// Using only `proc_macro2::TokenStream` inside the entire crate makes methods unit-testable and
+/// removes the need for conversions everywhere.
 fn enum_dispatch2(attr: TokenStream, item: TokenStream) -> TokenStream {
     let new_block = attributed_parser::parse_attributed(item.clone()).unwrap();
     let expanded = match &new_block {
