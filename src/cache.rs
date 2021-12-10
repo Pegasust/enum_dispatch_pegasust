@@ -76,6 +76,8 @@ pub fn defer_link(
     (needed, needed_num_generics): (&::proc_macro2::Ident, usize),
     (cached, cached_num_generics): (&::proc_macro2::Ident, usize),
 ) {
+    use std::collections::hash_map::Entry;
+
     let (needed, cached) = (
         UniqueItemId::new(needed.to_string(), needed_num_generics),
         UniqueItemId::new(cached.to_string(), cached_num_generics),
@@ -89,10 +91,10 @@ pub fn defer_link(
     } else {
         deferred_links.insert(needed.to_owned(), vec![cached.to_owned()]);
     }
-    if deferred_links.contains_key(&cached) {
-        deferred_links.get_mut(&cached).unwrap().push(needed);
+    if let Entry::Vacant(e) = deferred_links.entry(cached.clone()) {
+        e.insert(vec![needed]);
     } else {
-        deferred_links.insert(cached, vec![needed]);
+        deferred_links.get_mut(&cached).unwrap().push(needed);
     }
 }
 
@@ -113,10 +115,7 @@ pub fn fulfilled_by_enum(
     idents
         .iter()
         .filter_map(
-            |ident_string| match TRAIT_DEFS.lock().unwrap().get(ident_string) {
-                Some(entry) => Some(syn::parse(entry.parse().unwrap()).unwrap()),
-                None => None,
-            },
+            |ident_string| TRAIT_DEFS.lock().unwrap().get(ident_string).map(|entry| syn::parse(entry.parse().unwrap()).unwrap())
         )
         .collect()
 }
@@ -138,10 +137,7 @@ pub fn fulfilled_by_trait(
     idents
         .iter()
         .filter_map(
-            |ident_string| match ENUM_DEFS.lock().unwrap().get(ident_string) {
-                Some(entry) => Some(syn::parse(entry.parse().unwrap()).unwrap()),
-                None => None,
-            },
+            |ident_string| ENUM_DEFS.lock().unwrap().get(ident_string).map(|entry| syn::parse(entry.parse().unwrap()).unwrap())
         )
         .collect()
 }

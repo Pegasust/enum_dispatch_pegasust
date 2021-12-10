@@ -17,10 +17,7 @@ where
 
     fn outer(self) -> Self::Ret {
         fn is_outer(attr: &&syn::Attribute) -> bool {
-            match attr.style {
-                syn::AttrStyle::Outer => true,
-                _ => false,
-            }
+            matches!(attr.style, syn::AttrStyle::Outer)
         }
         self.into_iter().filter(is_outer)
     }

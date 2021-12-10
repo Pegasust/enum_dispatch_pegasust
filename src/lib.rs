@@ -370,7 +370,7 @@ pub fn enum_dispatch(attr: proc_macro::TokenStream, item: proc_macro::TokenStrea
 /// removes the need for conversions everywhere.
 fn enum_dispatch2(attr: TokenStream, item: TokenStream) -> TokenStream {
     let new_block = attributed_parser::parse_attributed(item.clone()).unwrap();
-    let expanded = match &new_block {
+    let mut expanded = match &new_block {
         attributed_parser::ParsedItem::Trait(traitdef) => {
             cache::cache_trait(traitdef.to_owned());
             item
@@ -379,10 +379,8 @@ fn enum_dispatch2(attr: TokenStream, item: TokenStream) -> TokenStream {
             cache::cache_enum_dispatch(enumdef.clone());
             syn::ItemEnum::from(enumdef.to_owned())
                 .into_token_stream()
-                .into()
         }
     };
-    let mut expanded = proc_macro2::TokenStream::from(expanded);
     // If the attributes are non-empty, the new block should be "linked" to the listed definitions.
     // Those definitions may or may not have been cached yet.
     // If one is not cached yet, the link will be pushed into the cache, and impl generation will
@@ -448,5 +446,5 @@ fn enum_dispatch2(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
     }
-    expanded.into()
+    expanded
 }
