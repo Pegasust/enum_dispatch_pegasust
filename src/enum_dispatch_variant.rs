@@ -16,6 +16,7 @@ use crate::filter_attrs::FilterAttrs;
 pub struct EnumDispatchVariant {
     pub attrs: Vec<syn::Attribute>,
     pub ident: syn::Ident,
+    pub field_attrs: Vec<syn::Attribute>,
     pub ty: syn::Type,
 }
 
@@ -24,7 +25,7 @@ impl syn::parse::Parse for EnumDispatchVariant {
     fn parse(input: syn::parse::ParseStream) -> syn::parse::Result<Self> {
         let attrs = input.call(syn::Attribute::parse_outer)?;
         let ident: syn::Ident = input.parse()?;
-        let ty = if input.peek(syn::token::Brace) {
+        let (field_attrs, ty) = if input.peek(syn::token::Brace) {
             unimplemented!("enum_dispatch variants cannot have braces for arguments");
         } else if input.peek(syn::token::Paren) {
             let input: syn::FieldsUnnamed = input.parse()?;
@@ -35,11 +36,16 @@ impl syn::parse::Parse for EnumDispatchVariant {
             if fields.next().is_some() {
                 panic!("Named enum_dispatch variants can only have one unnamed field");
             }
-            field_1.ty.clone()
+            (field_1.attrs.clone(), field_1.ty.clone())
         } else {
-            into_type(ident.clone())
+            (vec![], into_type(ident.clone()))
         };
-        Ok(EnumDispatchVariant { attrs, ident, ty })
+        Ok(EnumDispatchVariant {
+            attrs,
+            ident,
+            field_attrs,
+            ty,
+        })
     }
 }
 
@@ -49,6 +55,7 @@ impl quote::ToTokens for EnumDispatchVariant {
         tokens.append_all(self.attrs.outer());
         self.ident.to_tokens(tokens);
         syn::token::Paren::default().surround(tokens, |tokens| {
+            tokens.append_all(self.field_attrs.iter());
             self.ty.to_tokens(tokens);
         });
     }

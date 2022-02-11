@@ -83,7 +83,7 @@ impl ::std::convert::From<EnumDispatchItem> for syn::ItemEnum {
                     unnamed: {
                         let mut punctuated = syn::punctuated::Punctuated::new();
                         punctuated.push(syn::Field {
-                            attrs: vec![],
+                            attrs: variant.field_attrs.to_owned(),
                             vis: syn::Visibility::Inherited,
                             ident: None,
                             colon_token: Default::default(),
